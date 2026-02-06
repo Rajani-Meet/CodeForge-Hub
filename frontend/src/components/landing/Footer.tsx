@@ -1,5 +1,7 @@
 "use client";
 
+import Link from 'next/link';
+
 export default function Footer() {
     return (
         <footer className="border-t border-white/10 bg-[#05080f] pt-16 pb-8">
@@ -18,10 +20,10 @@ export default function Footer() {
                         </span>
                     </h2>
                     <div className="relative flex items-center justify-center w-full">
-                        <button className="relative px-16 py-8 bg-accent-purple/90 hover:bg-accent-purple text-white text-3xl font-black rounded-2xl shadow-[0_0_80px_-10px_rgba(139,92,246,0.6)] transition-all hover:scale-105 hover:shadow-[0_0_100px_-5px_rgba(139,92,246,0.8)] border border-white/20 z-10 group overflow-hidden">
+                        <Link href="/login" className="relative px-16 py-8 bg-accent-purple/90 hover:bg-accent-purple text-white text-3xl font-black rounded-2xl shadow-[0_0_80px_-10px_rgba(139,92,246,0.6)] transition-all hover:scale-105 hover:shadow-[0_0_100px_-5px_rgba(139,92,246,0.8)] border border-white/20 z-10 group overflow-hidden">
                             <span className="relative z-10">Start Coding</span>
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                        </button>
+                        </Link>
                         <div className="absolute top-1/2 left-[calc(50%+180px)] -translate-y-1/2 hidden lg:block rotate-[-5deg]">
                             <div className="font-hand text-white text-2xl whitespace-nowrap relative">
                                 No Credit Card Required
@@ -92,7 +94,7 @@ export default function Footer() {
                         <div className="flex h-6 w-6 items-center justify-center rounded bg-primary/20 text-primary">
                             <span className="material-symbols-outlined text-[14px]">terminal</span>
                         </div>
-                        <span>© 2026 Code Forge Hub Inc.</span>
+                        <span>© 2026 CodeBlocking Inc.</span>
                     </div>
                     <div className="flex gap-6">
                         <a className="hover:text-slate-400" href="#">Privacy Policy</a>

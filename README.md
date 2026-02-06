@@ -1,129 +1,155 @@
-# CodeBlocking - Online IDE
+<div align="center">
+  <img src="https://raw.githubusercontent.com/lucide-react/lucide/main/icons/layers.svg" width="100" height="100" alt="Code Forge Hub Logo" />
 
-A modern, web-based IDE inspired by VSCode and Replit. Build, edit, and run code directly in your browser with a real terminal.
+  # 🚀 Code Forge Hub
+  ### A Premium Cloud-Native IDE for the Modern Web
 
-![CodeBlocking IDE](https://img.shields.io/badge/status-complete-brightgreen) ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
+  [![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge&logo=statuspage)](https://github.com/)
+  [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+  [![Docker](https://img.shields.io/badge/Docker-24-blue?style=for-the-badge&logo=docker)](https://www.docker.com/)
+  [![Supabase](https://img.shields.io/badge/Supabase-DB-green?style=for-the-badge&logo=supabase)](https://supabase.com/)
+  [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+
+  [Features](#-features) • [Architecture](#-architecture) • [Tech Stack](#-tech-stack) • [Quick Start](#-quick-start) • [API](#-api-reference)
+</div>
+
+---
+
+## � Introduction
+
+**Code Forge Hub** is a premium, cloud-powered IDE designed to bring the power of VSCode directly to your browser. Whether you're importing a local project or connecting to GitHub, Code Forge Hub provides a seamless, zero-latency development environment with integrated containerization.
 
 ## ✨ Features
 
-- **📁 File Explorer** - Tree view with create, delete, rename files & folders
-- **📝 Monaco Editor** - VSCode's editor with syntax highlighting & IntelliSense
-- **💾 Autosave** - Debounced auto-save (1.5s after typing stops)
-- **🖥️ Real Terminal** - Fully functional bash terminal via WebSocket
-- **📐 Resizable Panels** - Drag to resize sidebar and terminal
-- **🎨 Dark Theme** - Modern dark UI with smooth animations
-- **⌨️ Keyboard Shortcuts** - Platform-aware (Cmd/Ctrl+S to save)
+### 💻 IDE Experience
+- **� Pro File Explorer** – Tree-based management with recursive operations.
+- **📝 Monaco Engine** – Powered by the same engine as VSCode for an industry-standard experience.
+- **🖥️ Real-time PTY Terminal** – Fully functional Linux terminal with multiple shell support.
+- **💾 Smart Autosave** – Intelligent, debounced saving logic keeps your focus on the code.
+
+### 🚀 Advanced Integration
+- **� Local Folder Import** – **(New!)** Upload local directories directly. We handle the GitHub repo creation and initial push automatically.
+- **🔗 GitHub Native** – Direct integration with GitHub for cloning, committing, and pushing changes.
+- **📦 Managed Environments** – One-click setups for **Node.js**, **Python**, and **Java** runtimes.
+
+### � Design & UX
+- **🌓 Glassmorphic UI** – A stunning, modern interface with deep transparency and blur effects.
+- **📐 Elastic Layout** – Draggable, resizable panels for a custom workspace.
+- **⚡ Zero-Latency** – Background container pre-warming ensures your workspace is ready before you are.
+
+---
+
+## 🌐 Landing Page
+
+Code Forge Hub features a high-conversion, standalone marketing site designed with standard-setting aesthetics.
+
+- 💎 **Pixel-Perfect**: High-fidelity glassmorphism and smooth motion graphics.
+- 📱 **Adaptive**: Fully responsive across ultra-wide monitors and mobile devices.
+- ⚡ **Optimized**: Static Site Generation (SSG) for instant load times and SEO.
+
+---
 
 ## 🏗️ Architecture
 
+```mermaid
+graph TD
+    A[User Browser] ==> B[Landing Page]
+    A ==> C[IDE Frontend - Next.js]
+    C <==> D[Backend API - Express]
+    D <==> E[Docker Container - PTY]
+    D <==> F[Supabase - Auth/DB]
+    D <==> G[GitHub API]
 ```
-codeblocking/
-├── frontend/                 # Next.js 14 + TypeScript
-│   ├── src/
-│   │   ├── app/page.tsx     # Main page
-│   │   ├── components/
-│   │   │   ├── layout/      # IdeLayout (resizable panels)
-│   │   │   ├── explorer/    # FileExplorer (file tree, CRUD)
-│   │   │   ├── editor/      # CodeEditor (Monaco, tabs, autosave)
-│   │   │   └── terminal/    # TerminalPanel (xterm.js)
-│   │   ├── store/           # Zustand state management
-│   │   └── lib/             # API client, Socket client
-│   └── package.json
-├── backend/                  # Express.js + TypeScript
-│   ├── src/
-│   │   ├── index.ts         # Server + Socket.IO
-│   │   ├── routes/files.ts  # File CRUD API
-│   │   ├── services/
-│   │   │   ├── fileSystem.ts  # File operations
-│   │   │   └── terminal.ts    # PTY management
-│   │   └── middleware/
-│   └── package.json
-└── README.md
+
+```text
+CodeForge-Hub/
+├── 🌐 landing-page/   # Marketing & Conversion
+├── 💻 frontend/       # Core IDE Application
+├── ⚙️ backend/        # Process & Container Orchestration
+├── 🐳 docker/         # Isolation & Runtime Definitions
+└── 🛠️ scripts/        # Automation & Deployment
 ```
+
+---
 
 ## 🛠️ Tech Stack
 
-| Frontend | Backend |
-|----------|---------|
-| Next.js 14 | Express.js |
-| TypeScript | TypeScript |
-| Monaco Editor | Socket.IO |
-| xterm.js | node-pty |
-| Zustand | REST API |
-| Tailwind CSS | Sandboxed FS |
+| Type | Technology | Logo |
+| :--- | :--- | :---: |
+| **Frontend** | Next.js 15, Framer Motion, Zustand | ⚛️ |
+| **Backend** | Node.js, Express, Socket.io | 🟢 |
+| **Terminal** | XTerm.js, Node-PTY | 🐚 |
+| **Isolation** | Docker, Dockerode | 🐳 |
+| **Cloud** | Supabase, GitHub API | ☁️ |
+
+---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Node.js 18+
-- npm 9+
+### 📋 Prerequisites
+- **Node.js** 20.x or higher
+- **Docker** Desktop / Engine
+- **Supabase** Project (URL & Anon Key)
+- **GitHub** OAuth Application
 
-### Installation
-
-```bash
-# Clone the repo
-git clone <repository-url>
-cd codeblocking
-
-# Install frontend
-cd frontend && npm install
-
-# Install backend
-cd ../backend && npm install
-```
-
-### Run Development Servers
+### ⚙️ Installation
 
 ```bash
-# Terminal 1 - Backend (port 3001)
-cd backend && npm run dev
+# 1. Clone the project
+git clone https://github.com/user/code-forge-hub.git && cd CodeForge-Hub
 
-# Terminal 2 - Frontend (port 3000)
-cd frontend && npm run dev
+# 2. Setup Backend
+cd backend && npm install
+
+# 3. Setup Frontend
+cd ../frontend && npm install
+
+# 4. Setup Landing Page
+cd ../landing-page && npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) 🎉
+### ⚡ Execution
 
-## 📡 API Endpoints
+For the best experience, run each service in a separate terminal window:
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/files/tree` | GET | Get file tree |
-| `/api/files/read?path=` | GET | Read file content |
-| `/api/files/write` | POST | Save file content |
-| `/api/files/create` | POST | Create file/folder |
-| `/api/files/delete?path=` | DELETE | Delete file/folder |
-| `/api/files/rename` | POST | Rename file/folder |
-| `/api/health` | GET | Health check |
+| Service | Command | Port | Title |
+| :--- | :--- | :---: | :--- |
+| **Backend** | `npm run dev` | `4001` | Core API & Terminal Service |
+| **Frontend** | `npm run dev` | `4000` | The IDE Application |
+| **Marketing** | `npm run dev` | `3000` | High-Conversion Landing Page |
 
-**WebSocket Events:**
-- `terminal:create` - Create PTY session
-- `terminal:input` - Send input to terminal
-- `terminal:output` - Receive terminal output
-- `terminal:resize` - Resize terminal
+---
 
-## 📝 Environment Variables
+## 📡 API Reference
 
-### Frontend (`frontend/.env`)
-```env
-NEXT_PUBLIC_API_URL=http://localhost:3001
-```
+### 📁 Project Management
+- `GET /api/projects` – List all user workspace
+- `POST /api/projects` – Import from GitHub
+- `POST /api/projects/import` – **Multipart** local file upload
+- `DELETE /api/projects/:id` – Tear down workspace
 
-### Backend (`backend/.env`)
-```env
-PORT=3001
-FRONTEND_URL=http://localhost:3000
-WORKSPACE_DIR=./workspace
-```
+### 📄 File Operations
+- `GET /api/files/tree/:id` – Recursive structure fetch
+- `GET /api/files/:id/read` – Stream file content
+- `POST /api/files/:id/write` – Persist changes
 
-## 🎯 Keyboard Shortcuts
+---
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl/⌘ + S` | Save file |
-| Click file | Open in editor |
-| Drag divider | Resize panels |
+## ⌨️ Keyboard Shortcuts
+
+| Key | Description |
+| :--- | :--- |
+| `Ctrl + S` | Force Save / Sync |
+| `Alt + T` | Toggle Terminal Focus |
+| `Ctrl + P` | Quick Open (Coming Soon) |
+
+---
 
 ## 📄 License
 
-MIT
+Distributed under the **MIT License**. See `LICENSE` for more information.
+
+<div align="center">
+  Built with ❤️ for the development community.
+</div>
