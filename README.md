@@ -56,6 +56,7 @@ Code Forge Hub features a high-conversion, standalone marketing site designed wi
 graph TD
     A[User Browser] ==> B[Landing Page]
     A ==> C[IDE Frontend - Next.js]
+    B ==> C
     C <==> D[Backend API - Express]
     D <==> E[Docker Container - PTY]
     D <==> F[Supabase - Auth/DB]
