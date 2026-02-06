@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/lucide-react/lucide/main/icons/layers.svg" width="100" height="100" alt="Code Forge Hub Logo" />
 
   # 🚀 Code Forge Hub
   ### A Premium Cloud-Native IDE for the Modern Web
@@ -56,7 +55,6 @@ Code Forge Hub features a high-conversion, standalone marketing site designed wi
 graph TD
     A[User Browser] ==> B[Landing Page]
     A ==> C[IDE Frontend - Next.js]
-    B ==> C
     C <==> D[Backend API - Express]
     D <==> E[Docker Container - PTY]
     D <==> F[Supabase - Auth/DB]
