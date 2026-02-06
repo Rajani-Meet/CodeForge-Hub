@@ -59,28 +59,53 @@ export default function IdePage() {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session?.access_token) {
                     api.setAuthToken(session.access_token);
-                    terminalSocket.setAuth(projectId, session.access_token, projectData.environment);
+                    if (session.provider_token) {
+                        api.setGithubToken(session.provider_token);
+                    }
+                    terminalSocket.setAuth(projectId, session.access_token, user.id, projectData.environment);
                 }
 
                 // Open project on backend (clone if needed)
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-                const response = await fetch(`${apiUrl}/api/projects/${projectId}/open`, {
-                    headers: {
-                        Authorization: `Bearer ${session?.access_token}`,
-                    },
-                });
 
-                if (!response.ok) {
-                    const data = await response.json();
-                    setError(data.error || "Failed to open project");
+                let response;
+                let retries = 3;
+                while (retries > 0) {
+                    try {
+                        response = await fetch(`${apiUrl}/api/projects/${projectId}/open`, {
+                            headers: {
+                                Authorization: `Bearer ${session?.access_token}`,
+                            },
+                        });
+                        if (response.ok) break;
+
+                        // If 500 or network error, retry
+                        if (response.status >= 500) throw new Error(response.statusText);
+                        // If client error, stop
+                        break;
+                    } catch (e) {
+                        console.log(`Failed to open project, retrying... (${retries} attempts left)`);
+                        retries--;
+                        if (retries === 0) throw e;
+                        await new Promise(r => setTimeout(r, 1000));
+                    }
+                }
+
+                if (!response || !response.ok) {
+                    const data = await response?.json().catch(() => ({}));
+                    const msg = data?.error
+                        ? (typeof data.error === 'string' ? data.error : JSON.stringify(data.error))
+                        : "Failed to open project";
+                    setError(msg);
                     setLoading(false);
                     return;
                 }
 
                 setLoading(false);
-            } catch (err) {
+            } catch (err: unknown) {
                 console.error("Error initializing IDE:", err);
-                setError("Failed to initialize IDE");
+                const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
+                setError(`Failed to initialize IDE: ${errorMessage}`);
                 setLoading(false);
             }
         };

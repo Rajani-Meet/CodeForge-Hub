@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Link from 'next/link';
 
 export default function CTA() {
 
@@ -44,7 +45,7 @@ export default function CTA() {
                             </div>
                             <div className="flex-1">
                                 <h3 className="text-2xl font-bold text-white mb-2 font-display">Self-Hostable</h3>
-                                <p className="text-slate-400">Your data, your infrastructure. Deploy Code Forge Hub on your own Kubernetes cluster or VPS.</p>
+                                <p className="text-slate-400">Your data, your infrastructure. Deploy CodeBlocking on your own Kubernetes cluster or VPS.</p>
                             </div>
                             <div className="flex flex-col items-center gap-2">
                                 <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-full border border-white/10">
@@ -69,9 +70,9 @@ export default function CTA() {
                                 <path d="M10 10 Q 50 30 80 80" strokeLinecap="round" strokeDasharray="5 5" />
                                 <path d="M70 70 L 80 80 L 85 65" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
-                            <button className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-slate-200 transition-colors relative z-10">
+                            <Link href="/login" className="block w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-slate-200 transition-colors relative z-10">
                                 Get Started Free
-                            </button>
+                            </Link>
                         </div>
                     </div>
                 </div>
