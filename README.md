@@ -32,6 +32,12 @@
 - **🔗 GitHub Native** – Direct integration with GitHub for cloning, committing, and pushing changes.
 - **📦 Managed Environments** – One-click setups for **Node.js**, **Python**, and **Java** runtimes.
 
+### 🤝 Real-time Collaboration (New!)
+- **👥 Live Multi-cursor** – See exactly where your teammates are coding with color-coded cursors and name labels.
+- **⚡ Instant Sync** – Conflict-free editing powered by **Yjs CRDTs** for a seamless pairing experience.
+- **✉️ Easy Invites** – Invite teammates via email or GitHub username with a single click.
+- **🟢 Online Presence** – Visual indicators and profile photos of everyone currently in the workspace.
+
 ### � Design & UX
 - **🌓 Glassmorphic UI** – A stunning, modern interface with deep transparency and blur effects.
 - **📐 Elastic Layout** – Draggable, resizable panels for a custom workspace.
@@ -59,6 +65,7 @@ graph TD
     D <==> E[Docker Container - PTY]
     D <==> F[Supabase - Auth/DB]
     D <==> G[GitHub API]
+    C <==> H[Yjs - Collaboration Server]
 ```
 
 ```text
@@ -81,6 +88,7 @@ CodeForge-Hub/
 | **Terminal** | XTerm.js, Node-PTY | 🐚 |
 | **Isolation** | Docker, Dockerode | 🐳 |
 | **Cloud** | Supabase, GitHub API | ☁️ |
+| **Collab** | Yjs, y-websocket, y-monaco | 🤝 |
 
 ---
 
@@ -132,6 +140,11 @@ For the best experience, run each service in a separate terminal window:
 - `GET /api/files/tree/:id` – Recursive structure fetch
 - `GET /api/files/:id/read` – Stream file content
 - `POST /api/files/:id/write` – Persist changes
+
+### 🤝 Collaboration
+- `POST /api/collaborators/:projectId/invite` – Send email invitations
+- `GET /api/collaborators/:projectId` – List active collaborators
+- `DELETE /api/collaborators/:projectId/:userId` – Remove a collaborator
 
 ---
 
