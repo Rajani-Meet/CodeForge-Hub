@@ -40,6 +40,10 @@ interface IdeState {
 
     // GitHub Actions
     saveToGithub: (branchName?: string) => Promise<{ success: boolean; branch?: string; error?: string }>;
+
+    // Collaboration
+    collabProvider: any | null;
+    setCollabProvider: (provider: any | null) => void;
 }
 
 export const useIdeStore = create<IdeState>((set, get) => ({
@@ -160,6 +164,9 @@ export const useIdeStore = create<IdeState>((set, get) => ({
 
     isBackendConnected: false,
     setBackendConnected: (connected) => set({ isBackendConnected: connected }),
+
+    collabProvider: null,
+    setCollabProvider: (provider) => set({ collabProvider: provider }),
 
     saveToGithub: async (branchName) => {
         const { projectId } = get();

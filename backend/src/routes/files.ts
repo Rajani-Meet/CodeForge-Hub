@@ -3,6 +3,8 @@ import multer from 'multer';
 import { createFileSystemService } from '../services/fileSystem.js';
 import { getProjectPath } from '../services/git.js';
 import { AuthenticatedRequest, authMiddleware } from '../middleware/auth.js';
+import { createUserClient } from '../lib/supabase.js';
+import * as fs from 'fs';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -12,16 +14,43 @@ const router = Router();
 router.use(authMiddleware);
 
 // Helper to get file system service for a project
-function getFileService(userId: string, projectId: string) {
-    const projectPath = getProjectPath(userId, projectId);
-    return createFileSystemService(projectPath);
+// Always resolves to the OWNER's workspace so collaborators see the real files
+async function getFileService(req: AuthenticatedRequest, projectId: string) {
+    const userId = req.user!.id;
+
+    // Always look up the real owner from the database first
+    const supabase = createUserClient(req.user!.accessToken);
+    const { data: project, error: projectError } = await supabase
+        .from('projects')
+        .select('user_id')
+        .eq('id', projectId)
+        .single();
+
+    if (projectError || !project) {
+        console.log(`[FileService] ⚠️ Could not find project ${projectId}:`, projectError);
+        // Fallback to user's own path
+        const userPath = getProjectPath(userId, projectId);
+        return createFileSystemService(userPath);
+    }
+
+    // Always use the OWNER's path (owner's cloned workspace has the actual files)
+    const ownerPath = getProjectPath(project.user_id, projectId);
+    console.log(`[FileService] User ${userId.slice(0, 8)} → owner ${project.user_id.slice(0, 8)}, path: ${ownerPath}, exists: ${fs.existsSync(ownerPath)}`);
+
+    if (fs.existsSync(ownerPath)) {
+        return createFileSystemService(ownerPath);
+    }
+
+    // If owner path doesn't exist yet, fall back to user's path
+    const userPath = getProjectPath(userId, projectId);
+    return createFileSystemService(userPath);
 }
 
 // Get file tree for a project
 router.get('/tree/:projectId', async (req: AuthenticatedRequest, res: Response) => {
     try {
         const { projectId } = req.params;
-        const fileService = getFileService(req.user!.id, projectId);
+        const fileService = await getFileService(req, projectId);
         await fileService.ensureWorkspace();
         const tree = await fileService.getFileTree();
 
@@ -42,7 +71,7 @@ router.get('/:projectId/read', async (req: AuthenticatedRequest, res: Response) 
             return res.status(400).json({ success: false, error: 'Path is required' });
         }
 
-        const fileService = getFileService(req.user!.id, projectId);
+        const fileService = await getFileService(req, projectId);
         const content = await fileService.readFile(filePath);
 
         res.json({ success: true, data: content });
@@ -63,7 +92,7 @@ router.post('/:projectId/write', async (req: AuthenticatedRequest, res: Response
             return res.status(400).json({ success: false, error: 'Path is required' });
         }
 
-        const fileService = getFileService(req.user!.id, projectId);
+        const fileService = await getFileService(req, projectId);
         await fileService.writeFile(filePath, content || '');
 
         res.json({ success: true, message: 'File saved' });
@@ -84,7 +113,7 @@ router.post('/:projectId/create', async (req: AuthenticatedRequest, res: Respons
             return res.status(400).json({ success: false, error: 'Path is required' });
         }
 
-        const fileService = getFileService(req.user!.id, projectId);
+        const fileService = await getFileService(req, projectId);
 
         if (type === 'folder') {
             await fileService.createFolder(itemPath);
@@ -110,7 +139,7 @@ router.delete('/:projectId/delete', async (req: AuthenticatedRequest, res: Respo
             return res.status(400).json({ success: false, error: 'Path is required' });
         }
 
-        const fileService = getFileService(req.user!.id, projectId);
+        const fileService = await getFileService(req, projectId);
         await fileService.delete(itemPath);
 
         res.json({ success: true, message: 'Item deleted' });
@@ -132,7 +161,7 @@ router.post('/:projectId/upload', upload.single('file'), async (req: any, res: R
             return res.status(400).json({ success: false, error: 'No file uploaded' });
         }
 
-        const fileService = getFileService(req.user!.id, projectId);
+        const fileService = await getFileService(req, projectId);
         const filePath = dirPath ? `${dirPath}/${file.originalname}` : file.originalname;
 
         await fileService.writeBuffer(filePath, file.buffer);

@@ -5,21 +5,24 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 import { useIdeStore } from "@/store/ide-store";
-import { Terminal, Code2, Wifi, Save, LogOut } from "lucide-react";
+import { Terminal, Code2, Wifi, Save, LogOut, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import FileExplorer from "@/components/ide/FileExplorer";
 import CodeEditor from "@/components/ide/CodeEditor";
 import TerminalPanel from "@/components/ide/TerminalPanel";
+import AddCollaboratorModal from "@/components/ide/AddCollaboratorModal";
+import OnlineCollaborators from "@/components/ide/OnlineCollaborators";
 
 export default function IdeLayout() {
-    const { isSidebarOpen, isTerminalOpen, toggleTerminal, saveToGithub, projectId } = useIdeStore();
+    const { isSidebarOpen, isTerminalOpen, toggleTerminal, saveToGithub, projectId, collabProvider } = useIdeStore();
     const router = useRouter();
 
     // Panel sizes as percentages
     const [sidebarWidth, setSidebarWidth] = useState(20);
     const [terminalHeight, setTerminalHeight] = useState(30);
     const [isSaving, setIsSaving] = useState(false);
+    const [showCollabModal, setShowCollabModal] = useState(false);
     const authTokenRef = useRef<string | null>(null);
     const providerTokenRef = useRef<string | null>(null);
 
@@ -188,7 +191,22 @@ export default function IdeLayout() {
                     <span className="text-xs text-slate-400 font-mono">Project: {projectId?.slice(0, 8) || 'Unknown'}</span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                    {/* Online Collaborators */}
+                    {collabProvider && <OnlineCollaborators provider={collabProvider} />}
+
+                    {/* Add Collaborator Button */}
+                    <motion.button
+                        onClick={() => setShowCollabModal(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-600/30 hover:border-emerald-500/30 transition-all"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        title="Invite Collaborator"
+                    >
+                        <UserPlus className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Invite</span>
+                    </motion.button>
+
                     <motion.button
                         onClick={handleSaveAndExit}
                         disabled={isSaving}
@@ -217,6 +235,9 @@ export default function IdeLayout() {
                     </button>
                 </div>
             </header>
+
+            {/* Add Collaborator Modal */}
+            <AddCollaboratorModal isOpen={showCollabModal} onClose={() => setShowCollabModal(false)} />
 
             <div className="flex-1 flex overflow-hidden relative z-10">
                 {/* Sidebar */}

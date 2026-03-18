@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-type ProjectEnvironment = 'python' | 'node' | 'multi' | 'base'
+type ProjectEnvironment = 'python' | 'node' | 'java' | 'multi' | 'base'
 
 interface EnvironmentResult {
     environment: ProjectEnvironment
@@ -53,10 +53,11 @@ export function detectEnvironment(projectPath: string): EnvironmentResult {
 
 export function getContainerImage(environment: ProjectEnvironment): string {
     const images: Record<ProjectEnvironment, string> = {
-        python: 'codeblocking/python',
-        node: 'codeblocking/node',
-        multi: 'codeblocking/multi',
-        base: 'codeblocking/base'
+        python: 'python:3.11-alpine',
+        node: 'node:20-alpine',
+        java: 'eclipse-temurin:21-jdk-alpine',
+        multi: 'node:20-alpine',
+        base: 'node:20-alpine'
     }
     return images[environment]
 }

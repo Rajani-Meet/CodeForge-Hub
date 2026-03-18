@@ -39,7 +39,8 @@ export async function pingDocker(): Promise<boolean> {
 const ENVIRONMENT_IMAGES: Record<string, string> = {
     python: 'python:3.11-alpine',
     node: 'node:20-alpine',
-    java: 'openjdk:17-alpine',
+    java: 'eclipse-temurin:21-jdk-alpine',
+    multi: 'node:20-alpine',
     base: 'node:20-alpine',
 };
 
@@ -140,29 +141,12 @@ export async function spawnContainer(
 
     const imageName = ENVIRONMENT_IMAGES[environment] || 'node:20-alpine';
 
-    // Pull image if not exists
-    try {
-        await docker.getImage(imageName).inspect();
-    } catch (error) {
-        console.log(`Pulling image ${imageName}...`);
-        await new Promise((resolve, reject) => {
-            docker.pull(imageName, (err: any, stream: any) => {
-                if (err) return reject(err);
-                docker.modem.followProgress(stream, (err: any, output: any) => {
-                    if (err) return reject(err);
-                    console.log(`Image ${imageName} pulled successfully`);
-                    resolve(output);
-                });
-            });
-        });
-    }
-
     // Find available ports for common dev server ports
     const portBindings: Record<string, { HostPort: string }[]> = {};
     const ports = new Map<number, number>();
 
-    // Bind ports 3000-3010 from container to available host ports
-    for (let containerPort = 5000; containerPort <= 5010; containerPort++) {
+    // Bind ports 3000-3005 from container to available host ports
+    for (let containerPort = 3000; containerPort <= 3005; containerPort++) {
         const hostPort = await findAvailablePort();
         portBindings[`${containerPort}/tcp`] = [{ HostPort: hostPort.toString() }];
         ports.set(containerPort, hostPort);

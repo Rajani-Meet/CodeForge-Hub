@@ -38,12 +38,11 @@ export default function IdePage() {
                     return;
                 }
 
-                // Fetch project details
+                // Fetch project details. RLS handles the security: guarantees owner, public project, or collaborator
                 const { data: projectData, error: projectError } = await supabase
                     .from("projects")
                     .select("*")
                     .eq("id", projectId)
-                    .eq("user_id", user.id)
                     .single();
 
                 if (projectError || !projectData) {

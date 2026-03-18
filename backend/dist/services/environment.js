@@ -36,8 +36,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.detectEnvironment = detectEnvironment;
 exports.getContainerImage = getContainerImage;
 const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
 function detectEnvironment(projectPath) {
     const files = fs.readdirSync(projectPath);
+    // Check root level
     const hasPython = files.includes('requirements.txt') ||
         files.includes('setup.py') ||
         files.includes('pyproject.toml') ||
@@ -45,6 +47,18 @@ function detectEnvironment(projectPath) {
         files.some(f => f.endsWith('.py'));
     const hasNode = files.includes('package.json') ||
         files.some(f => f.endsWith('.js') || f.endsWith('.ts') || f.endsWith('.jsx') || f.endsWith('.tsx'));
+    // Check subdirectories for package.json
+    if (!hasNode) {
+        for (const file of files) {
+            const fullPath = path.join(projectPath, file);
+            if (fs.statSync(fullPath).isDirectory()) {
+                const subFiles = fs.readdirSync(fullPath);
+                if (subFiles.includes('package.json')) {
+                    return { environment: 'node', reason: 'Found package.json in subdirectory' };
+                }
+            }
+        }
+    }
     if (hasPython && hasNode) {
         return { environment: 'multi', reason: 'Found both Python and Node.js files' };
     }
@@ -54,14 +68,15 @@ function detectEnvironment(projectPath) {
     if (hasNode) {
         return { environment: 'node', reason: 'Found Node.js/JavaScript files' };
     }
-    return { environment: 'base', reason: 'No specific environment detected' };
+    return { environment: 'node', reason: 'Default to Node.js environment' };
 }
 function getContainerImage(environment) {
     const images = {
-        python: 'codeblocking/python',
-        node: 'codeblocking/node',
-        multi: 'codeblocking/multi',
-        base: 'codeblocking/base'
+        python: 'python:3.11-alpine',
+        node: 'node:20-alpine',
+        java: 'eclipse-temurin:21-jdk-alpine',
+        multi: 'node:20-alpine',
+        base: 'node:20-alpine'
     };
     return images[environment];
 }

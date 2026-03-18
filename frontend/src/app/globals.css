@@ -184,3 +184,47 @@ body {
   font-family: var(--font-sans), sans-serif;
   overflow-x: hidden;
 }
+
+/* ===== Yjs Collaboration Cursor Styles ===== */
+
+/* Remote cursor line */
+.yRemoteSelection {
+  opacity: 0.35;
+}
+
+/* Remote cursor caret */
+.yRemoteSelectionHead {
+  position: absolute;
+  border-left: 2px solid;
+  border-color: inherit;
+  height: 100%;
+}
+
+/* Remote cursor user label */
+.yRemoteSelectionHead::after {
+  content: attr(data-username);
+  position: absolute;
+  top: -1.4em;
+  left: -1px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-sans), sans-serif;
+  padding: 1px 6px;
+  border-radius: 4px 4px 4px 0;
+  color: #fff;
+  background-color: inherit;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.02em;
+}
+
+/* Scrollbar for file explorer / panels */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -20,10 +20,40 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
     try {
         const supabase = createUserClient(req.user!.accessToken)
 
-        const { data: projects, error } = await supabase
+        // 1. Fetch strictly owned projects
+        const { data: ownedProjects, error: ownedError } = await supabase
             .from('projects')
             .select('*')
+            .eq('user_id', req.user!.id)
             .order('last_opened', { ascending: false })
+
+        // 2. Fetch projects you explicitly collaborate on
+        const { data: collabRecords } = await supabase
+            .from('project_collaborators')
+            .select('project_id')
+            .eq('user_id', req.user!.id)
+
+        let collabProjects: any[] = []
+        if (collabRecords && collabRecords.length > 0) {
+            const { data: cProjects } = await supabase
+                .from('projects')
+                .select('*')
+                .in('id', collabRecords.map(c => c.project_id))
+            collabProjects = cProjects || []
+        }
+
+        // Merge arrays
+        const rawProjects = [...(ownedProjects || []), ...collabProjects]
+
+        // Remove exact duplicates
+        const uniqueKeys = new Set()
+        const projects = rawProjects.filter(p => {
+            if (uniqueKeys.has(p.id)) return false
+            uniqueKeys.add(p.id)
+            return true
+        }).sort((a, b) => new Date(b.last_opened).getTime() - new Date(a.last_opened).getTime())
+
+        const error = ownedError
 
         if (error) {
             console.error('Error fetching projects:', error)
@@ -142,27 +172,42 @@ router.get('/:id/open', async (req: AuthenticatedRequest, res) => {
             return res.status(404).json({ error: 'Project not found' })
         }
 
-        // Check if project is cloned locally
-        const projectPath = getProjectPath(req.user!.id, id)
-        const isCloned = fs.existsSync(projectPath)
+        // Check if project is cloned locally by the OWNER first (collaborators share the owner's clone)
+        const ownerPath = getProjectPath(project.user_id, id)
+        const userPath = getProjectPath(req.user!.id, id)
+        const isOwnerCloned = fs.existsSync(ownerPath)
+        const isUserCloned = fs.existsSync(userPath)
 
-        if (!isCloned) {
-            // Re-clone if needed
-            const githubToken = req.user?.providerToken
-            if (!githubToken) {
-                return res.status(400).json({ error: 'GitHub token not available' })
+        // Determine the actual project path to use
+        let projectPath: string
+
+        if (req.user!.id === project.user_id) {
+            // This is the owner
+            projectPath = ownerPath
+            if (!isOwnerCloned) {
+                const githubToken = req.user?.providerToken
+                if (!githubToken) {
+                    return res.status(400).json({ error: 'GitHub token not available. Please log out and log back in with GitHub.' })
+                }
+                await cloneRepository(project.repo_url, githubToken, req.user!.id, id)
+            } else {
+                // Pull latest changes silently
+                try {
+                    const { pullRepository } = await import('../services/git.js')
+                    await pullRepository(projectPath, req.user!.providerToken)
+                    console.log(`[GitService] Auto-pulled latest changes for project ${id}`)
+                } catch (pullError) {
+                    console.error(`[GitService] Auto-pull failed for project ${id}:`, pullError)
+                }
             }
-
-            await cloneRepository(project.repo_url, githubToken, req.user!.id, id)
         } else {
-            // If already cloned, pull latest changes to stay in sync
-            try {
-                const { pullRepository } = await import('../services/git.js')
-                await pullRepository(projectPath, req.user!.providerToken)
-                console.log(`[GitService] Auto-pulled latest changes for project ${id}`)
-            } catch (pullError) {
-                console.error(`[GitService] Auto-pull failed for project ${id}:`, pullError)
-                // We don't block the opening if pull fails (e.g. offline or no new changes)
+            // This is a collaborator — use the owner's already-cloned repo
+            if (isOwnerCloned) {
+                projectPath = ownerPath
+                console.log(`[Collab] User ${req.user!.id} joining owner's workspace for project ${id}`)
+            } else {
+                // Owner hasn't cloned yet; collaborator can't clone for them
+                return res.status(400).json({ error: 'The project owner has not opened this project yet. Ask them to open it first.' })
             }
         }
 

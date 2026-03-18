@@ -4,7 +4,7 @@ import * as path from 'path'
 import os from 'os'
 
 // Use home directory for workspaces (shared by default in Docker Desktop)
-const WORKSPACE_DIR = process.env.WORKSPACE_DIR || path.join(os.homedir(), '.codeblocking', 'workspaces')
+const WORKSPACE_DIR = path.resolve(process.env.WORKSPACE_DIR || path.join(os.homedir(), '.codeblocking', 'workspaces'))
 
 // Get project path with userId and projectId
 export function getProjectPath(userId: string, projectId: string): string;

@@ -40,11 +40,15 @@ exports.getProjectPath = getProjectPath;
 exports.cloneRepository = cloneRepository;
 exports.pullRepository = pullRepository;
 exports.pushRepository = pushRepository;
+exports.createAndPushBranch = createAndPushBranch;
+exports.initAndPushRepo = initAndPushRepo;
 exports.deleteProject = deleteProject;
 const simple_git_1 = __importDefault(require("simple-git"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
-const WORKSPACE_DIR = process.env.WORKSPACE_DIR || '/tmp/codeblocking/workspaces';
+const os_1 = __importDefault(require("os"));
+// Use home directory for workspaces (shared by default in Docker Desktop)
+const WORKSPACE_DIR = path.resolve(process.env.WORKSPACE_DIR || path.join(os_1.default.homedir(), '.codeblocking', 'workspaces'));
 function getProjectPath(userIdOrProjectId, projectId) {
     if (projectId === undefined) {
         // Called with just projectId - use 'projects' as subdirectory
@@ -62,15 +66,108 @@ async function cloneRepository(repoUrl, githubToken, userId, projectId) {
     await git.clone(authenticatedUrl, projectPath);
     return projectPath;
 }
-async function pullRepository(projectPath) {
+async function pullRepository(projectPath, githubToken) {
     const git = (0, simple_git_1.default)(projectPath);
-    await git.pull();
+    try {
+        // If token provided, ensure remote is up to date
+        if (githubToken) {
+            const remotes = await git.getRemotes(true);
+            const origin = remotes.find(r => r.name === 'origin');
+            if (origin) {
+                const url = origin.refs.push;
+                const authenticatedUrl = url.replace(/https:\/\/([^@]+@)?github\.com\//, `https://${githubToken}@github.com/`);
+                await git.remote(['set-url', 'origin', authenticatedUrl]);
+            }
+        }
+        // Fetch first to ensure we know about remote changes
+        await git.fetch();
+        // Then pull with rebase
+        await git.pull(['--rebase']);
+    }
+    catch (error) {
+        console.warn(`[GitService] Standard pull failed, attempting to recover current branch...`);
+        try {
+            const status = await git.status();
+            const currentBranch = status.current;
+            if (currentBranch) {
+                // Force fetch and reset to stay in sync with remote
+                await git.fetch('origin', currentBranch);
+                await git.reset(['--hard', `origin/${currentBranch}`]);
+            }
+        }
+        catch (recoverError) {
+            console.error(`[GitService] Recovery failed:`, recoverError);
+            // If it's the very first commit or branch doesn't exist on remote yet, 
+            // we don't want to crash.
+        }
+    }
 }
 async function pushRepository(projectPath, message = 'Update from CodeBlocking IDE') {
     const git = (0, simple_git_1.default)(projectPath);
     await git.add('.');
     await git.commit(message);
     await git.push();
+}
+async function createAndPushBranch(projectPath, branchName, githubToken, message = 'Update from CodeBlocking IDE') {
+    console.log(`[GitService] Starting createAndPushBranch at ${projectPath} for branch ${branchName}`);
+    const git = (0, simple_git_1.default)(projectPath);
+    try {
+        // If token provided, ensure remote is up to date
+        if (githubToken) {
+            const remotes = await git.getRemotes(true);
+            const origin = remotes.find(r => r.name === 'origin');
+            if (origin) {
+                const url = origin.refs.push;
+                // Replace or add token to github.com URLs
+                // This regex handles URLs with or without existing tokens
+                const authenticatedUrl = url.replace(/https:\/\/([^@]+@)?github\.com\//, `https://${githubToken}@github.com/`);
+                await git.remote(['set-url', 'origin', authenticatedUrl]);
+                console.log(`[GitService] Updated origin remote URL with provided token`);
+            }
+        }
+        await git.add('.');
+        // Check if there are changes to commit
+        const status = await git.status();
+        console.log(`[GitService] Status: ${status.files.length} modified files`);
+        if (status.files.length === 0) {
+            console.log(`[GitService] No changes detected. Skipping push.`);
+            return;
+        }
+        await git.commit(message);
+        console.log(`[GitService] Committed changes`);
+        // Create and checkout new branch
+        // -B creates or resets the branch if it already exists
+        await git.checkout(['-B', branchName]);
+        console.log(`[GitService] Checked out branch ${branchName}`);
+        // Push the new branch to origin
+        // --force to ensure we can update the auto-save branch if it exists
+        await git.push('origin', branchName, ['--set-upstream', '--force']);
+        console.log(`[GitService] Successfully pushed to origin`);
+    }
+    catch (error) {
+        console.error(`[GitService] Error in createAndPushBranch:`, error);
+        // SimpleGit errors often have details in .message or .stderr
+        const details = error.stderr || error.message || String(error);
+        throw new Error(`Git sync failed: ${details}`);
+    }
+}
+async function initAndPushRepo(projectPath, remoteUrl, githubToken, message = 'Initial commit from CodeForge Hub') {
+    const git = (0, simple_git_1.default)(projectPath);
+    try {
+        await git.init();
+        await git.branch(['-M', 'main']);
+        // Add token to URL for authentication
+        const authenticatedUrl = remoteUrl.replace('https://github.com/', `https://${githubToken}@github.com/`);
+        await git.addRemote('origin', authenticatedUrl);
+        await git.add('.');
+        await git.commit(message);
+        // Push initial commit to main branch
+        await git.push('origin', 'main', ['--set-upstream']);
+    }
+    catch (error) {
+        console.error(`[GitService] Error in initAndPushRepo:`, error);
+        throw new Error(`Git initialization failed: ${error.message || error}`);
+    }
 }
 function deleteProject(userId, projectId) {
     const projectPath = getProjectPath(userId, projectId);

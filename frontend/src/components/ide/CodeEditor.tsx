@@ -6,6 +6,9 @@ import { useIdeStore } from "@/store/ide-store";
 import { X, Circle, Save, Check, Loader2, Sparkles, Code2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import * as Y from 'yjs';
+import type { WebsocketProvider } from 'y-websocket';
+import type { MonacoBinding } from 'y-monaco';
 
 // Detect if user is on Mac
 const isMac = typeof window !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -106,6 +109,116 @@ export default function CodeEditor() {
     const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [showSaved, setShowSaved] = useState(false);
+
+    const providerRef = useRef<WebsocketProvider | null>(null);
+    const bindingRef = useRef<MonacoBinding | null>(null);
+    const ydocRef = useRef<Y.Doc | null>(null);
+
+    // Safe cleanup helper — suppress harmless Yjs warnings during destroy
+    const cleanupCollab = () => {
+        const origLog = console.log;
+        console.log = (...args: any[]) => {
+            if (typeof args[0] === 'string' && args[0].includes('[yjs]')) return;
+            origLog.apply(console, args);
+        };
+        try { bindingRef.current?.destroy(); } catch {}
+        try { providerRef.current?.destroy(); } catch {}
+        console.log = origLog;
+        bindingRef.current = null;
+        providerRef.current = null;
+        ydocRef.current = null;
+    };
+
+    useEffect(() => {
+        return () => { cleanupCollab(); };
+    }, [activeFile]);
+
+    const handleEditorDidMount = async (editor: any) => {
+        if (!activeFile) return;
+
+        const { projectId } = useIdeStore.getState();
+        if (!projectId) return;
+
+        // Clean up previous collaboration session
+        cleanupCollab();
+
+        const { WebsocketProvider } = await import('y-websocket');
+        const { MonacoBinding } = await import('y-monaco');
+
+        const ydoc = new Y.Doc();
+        ydocRef.current = ydoc;
+
+        const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
+        const wsUrl = NEXT_PUBLIC_API_URL.replace(/^http/, 'ws') + '/socket/collaboration';
+
+        // Room name MUST include projectId so both collaborators join the SAME room for the same file
+        const roomName = `${projectId}:${activeFile}`.replace(/[^a-zA-Z0-9:._-]/g, '-');
+        console.log(`[Collab] Joining room: ${roomName} via ${wsUrl}`);
+        
+        const provider = new WebsocketProvider(wsUrl, roomName, ydoc) as unknown as WebsocketProvider;
+        providerRef.current = provider;
+
+        // Log connection status
+        provider.on('status', (event: { status: string }) => {
+            console.log(`[Collab] WebSocket status: ${event.status}`);
+        });
+
+        // Store provider in IDE store for OnlineCollaborators component
+        const { setCollabProvider } = useIdeStore.getState();
+        setCollabProvider(provider);
+
+        const ytext = ydoc.getText('monaco');
+
+        // CRITICAL: Wait for initial sync, then seed Y.Text with file content if room is new
+        const currentContent = editor.getModel()?.getValue() || '';
+        
+        await new Promise<void>((resolve) => {
+            if ((provider as any).synced) {
+                resolve();
+            } else {
+                provider.once('sync', () => resolve());
+                // Timeout after 3s in case server doesn't respond
+                setTimeout(() => resolve(), 3000);
+            }
+        });
+
+        // If after sync the Y.Text is still empty BUT the editor has content,
+        // this is a new room — seed it with the file's actual content
+        if (ytext.length === 0 && currentContent.length > 0) {
+            console.log(`[Collab] New room — seeding with file content (${currentContent.length} chars)`);
+            ytext.insert(0, currentContent);
+        }
+
+        // Bind Yjs to Monaco
+        const binding = new MonacoBinding(
+            ytext,
+            editor.getModel(),
+            new Set([editor]),
+            provider.awareness
+        ) as unknown as MonacoBinding;
+        bindingRef.current = binding;
+
+        // Get real user info from Supabase for awareness
+        const colors = ['#f87171', '#fb923c', '#fbbf24', '#a3e635', '#34d399', '#22d3ee', '#818cf8', '#c084fc', '#f472b6'];
+        const userColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        try {
+            const { createClient } = await import('@/lib/supabase/client');
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            provider.awareness.setLocalStateField('user', {
+                name: user?.user_metadata?.user_name || user?.user_metadata?.full_name || user?.email || 'Anonymous',
+                color: userColor,
+                avatar: user?.user_metadata?.avatar_url || null,
+            });
+        } catch {
+            provider.awareness.setLocalStateField('user', {
+                name: 'User ' + Math.floor(Math.random() * 1000),
+                color: userColor,
+            });
+        }
+    };
 
     useEffect(() => {
         if (monaco) {
@@ -292,6 +405,7 @@ export default function CodeEditor() {
                     value={activeFileContent}
                     theme="codeforgehub-dark"
                     onChange={handleEditorChange}
+                    onMount={handleEditorDidMount}
                     options={{
                         minimap: { enabled: true, side: 'right' },
                         fontSize: 14,
