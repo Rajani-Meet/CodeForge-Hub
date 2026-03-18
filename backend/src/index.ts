@@ -6,6 +6,7 @@ import { Server } from 'socket.io'
 import githubRoutes from './routes/github.js'
 import projectsRoutes from './routes/projects.js'
 import filesRoutes from './routes/files.js'
+import collaboratorsRoutes from './routes/collaborators.js'
 import { initializeTerminalService, getActiveSessionCount, cleanupTerminals } from './services/terminal.js'
 import { cleanupAllContainers } from './services/container.js'
 
@@ -14,14 +15,50 @@ const httpServer = createServer(app)
 const PORT = process.env.PORT || 4001
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:4000'
 
-// Socket.IO setup
+// Allow local networks safely
+const allowedOrigins = [FRONTEND_URL, 'http://localhost:4000', 'http://127.0.0.1:4000', 'http://localhost:3000'];
+
+import { WebSocketServer } from 'ws'
+import path from 'path'
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { setupWSConnection } = require(path.join(process.cwd(), 'node_modules', 'y-websocket', 'bin', 'utils.js'))
+
+// Collaboration WebSocket server (y-websocket for real-time editing)
+const wss = new WebSocketServer({ noServer: true })
+wss.on('connection', (ws, req) => {
+    console.log(`[Collab] New WebSocket connection for: ${req.url}`)
+    if (setupWSConnection) {
+        setupWSConnection(ws, req);
+    }
+})
+
+// IMPORTANT: Register upgrade handler BEFORE Socket.IO so y-websocket gets priority
+httpServer.on('upgrade', (request, socket, head) => {
+    if (request.url?.startsWith('/socket/collaboration')) {
+        console.log(`[Collab] Upgrading to WebSocket: ${request.url}`)
+        wss.handleUpgrade(request, socket, head, ws => {
+            wss.emit('connection', ws, request)
+        })
+    }
+    // Socket.IO handles its own upgrades via /socket.io/ path automatically
+})
+
+// Socket.IO setup (for terminal connections)
 const io = new Server(httpServer, {
     cors: {
-        origin: FRONTEND_URL,
+        origin: function (origin, callback) {
+            if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1') || origin.startsWith('http://192.168.') || origin.startsWith('http://10.')) {
+                callback(null, true)
+            } else {
+                callback(null, allowedOrigins.includes(origin))
+            }
+        },
         methods: ['GET', 'POST'],
         credentials: true
     },
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
+    // Tell Socket.IO NOT to handle upgrade for our collaboration path
+    allowUpgrades: true
 })
 
 // Initialize terminal service with Socket.IO
@@ -29,7 +66,14 @@ initializeTerminalService(io)
 
 // Middleware
 app.use(cors({
-    origin: FRONTEND_URL,
+    origin: function (origin, callback) {
+        // dynamically allow local IPs or fallback to predefined
+        if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1') || origin.startsWith('http://192.168.') || origin.startsWith('http://10.')) {
+            callback(null, true)
+        } else {
+            callback(null, allowedOrigins.includes(origin))
+        }
+    },
     credentials: true
 }))
 app.use(express.json())
@@ -49,6 +93,7 @@ app.get('/health', async (req, res) => {
 app.use('/api/github', githubRoutes)
 app.use('/api/projects', projectsRoutes)
 app.use('/api/files', filesRoutes)
+app.use('/api/collaborators', collaboratorsRoutes)
 
 // Error handling
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {

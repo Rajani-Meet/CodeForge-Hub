@@ -1,4 +1,5 @@
 import Docker from 'dockerode';
+export declare function pingDocker(): Promise<boolean>;
 interface ContainerInfo {
     containerId: string;
     environment: string;
@@ -6,6 +7,7 @@ interface ContainerInfo {
     projectPath: string;
 }
 export declare function getContainer(userId: string, projectId: string): Promise<ContainerInfo | null>;
+export declare function forceStopContainer(userId: string, projectId: string): Promise<void>;
 export declare function spawnContainer(userId: string, projectId: string, environment: string, projectPath: string): Promise<ContainerInfo>;
 export declare function execInContainer(userId: string, projectId: string): Promise<Docker.Exec | null>;
 export declare function stopContainer(userId: string, projectId: string): Promise<void>;
