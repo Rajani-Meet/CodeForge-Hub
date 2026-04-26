@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/lucide-react/lucide/main/icons/layers.svg" width="100" height="100" alt="Code Forge Hub Logo" />
 
   # 🚀 Code Forge Hub
   ### A Premium Cloud-Native IDE for the Modern Web
