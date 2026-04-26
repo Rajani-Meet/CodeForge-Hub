@@ -368,6 +368,11 @@ export default function DashboardView({ user }: DashboardViewProps) {
             python: 'bg-[#ffbd2e]/20 text-[#ffbd2e] border-[#ffbd2e]/30',
             node: 'bg-[#39ff14]/20 text-[#39ff14] border-[#39ff14]/30',
             java: 'bg-[#ff7b72]/20 text-[#ff7b72] border-[#ff7b72]/30',
+            go: 'bg-[#00add8]/20 text-[#00add8] border-[#00add8]/30',
+            rust: 'bg-[#dea584]/20 text-[#dea584] border-[#dea584]/30',
+            cpp: 'bg-[#00599c]/20 text-[#00599c] border-[#00599c]/30',
+            php: 'bg-[#4f5b93]/20 text-[#4f5b93] border-[#4f5b93]/30',
+            ruby: 'bg-[#cc342d]/20 text-[#cc342d] border-[#cc342d]/30',
             base: 'bg-slate-500/20 text-slate-300 border-slate-500/30'
         }
         return (
@@ -538,7 +543,12 @@ export default function DashboardView({ user }: DashboardViewProps) {
                                             <div className="w-12 h-12 rounded-lg bg-background-dark border border-white/5 flex items-center justify-center text-2xl shadow-inner">
                                                 {project.environment === 'python' ? '🐍' :
                                                     project.environment === 'node' ? '⬢' :
-                                                        project.environment === 'java' ? '☕' : '📦'}
+                                                        project.environment === 'java' ? '☕' :
+                                                            project.environment === 'go' ? '🐹' :
+                                                                project.environment === 'rust' ? '🦀' :
+                                                                    project.environment === 'cpp' ? '💎' :
+                                                                        project.environment === 'php' ? '🐘' :
+                                                                            project.environment === 'ruby' ? '💎' : '📦'}
                                             </div>
                                             <EnvironmentBadge env={project.environment} />
                                         </div>
@@ -765,6 +775,11 @@ export default function DashboardView({ user }: DashboardViewProps) {
                                             { id: 'python', label: 'Python', icon: '🐍' },
                                             { id: 'node', label: 'Node', icon: '⬢' },
                                             { id: 'java', label: 'Java', icon: '☕' },
+                                            { id: 'go', label: 'Go', icon: '🐹' },
+                                            { id: 'rust', label: 'Rust', icon: '🦀' },
+                                            { id: 'cpp', label: 'C++', icon: 'C' },
+                                            { id: 'php', label: 'PHP', icon: '🐘' },
+                                            { id: 'ruby', label: 'Ruby', icon: '💎' },
                                             { id: 'base', label: 'Base', icon: '📦' }
                                         ].map(env => (
                                             <button

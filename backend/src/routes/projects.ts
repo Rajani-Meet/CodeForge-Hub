@@ -77,7 +77,7 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
         }
 
         // Validate environment
-        const validEnvironments = ['python', 'node', 'java', 'base']
+        const validEnvironments = ['python', 'node', 'java', 'go', 'rust', 'cpp', 'php', 'ruby', 'base']
         const selectedEnvironment = validEnvironments.includes(environment) ? environment : 'base'
 
         const githubToken = req.user?.providerToken
