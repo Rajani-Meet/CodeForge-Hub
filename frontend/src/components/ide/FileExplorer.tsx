@@ -29,8 +29,14 @@ import { useRef } from "react";
 // Custom Icon mapping with Neon Colors
 const FileIcon = ({ name, className }: { name: string; className?: string }) => {
     if (name.endsWith(".tsx") || name.endsWith(".ts")) return <FileCode2 className={cn("text-accent-blue", className)} />;
+    if (name.endsWith(".jsx") || name.endsWith(".js")) return <FileCode2 className={cn("text-accent-yellow", className)} />;
     if (name.endsWith(".py")) return <FileCode2 className={cn("text-accent-yellow", className)} />;
     if (name.endsWith(".java")) return <FileCode2 className={cn("text-accent-red", className)} />;
+    if (name.endsWith(".go")) return <FileCode2 className={cn("text-[#00add8]", className)} />;
+    if (name.endsWith(".rs")) return <FileCode2 className={cn("text-[#dea584]", className)} />;
+    if (name.endsWith(".cpp") || name.endsWith(".hpp") || name.endsWith(".c") || name.endsWith(".h")) return <FileCode2 className={cn("text-[#00599c]", className)} />;
+    if (name.endsWith(".php")) return <FileCode2 className={cn("text-[#4f5b93]", className)} />;
+    if (name.endsWith(".rb")) return <FileCode2 className={cn("text-[#cc342d]", className)} />;
     if (name.endsWith(".css")) return <FileType className={cn("text-accent-cyan", className)} />;
     if (name.endsWith(".json")) return <FileJson className={cn("text-accent-yellow", className)} />;
     if (name.endsWith(".md")) return <File className={cn("text-accent-purple", className)} />;

@@ -37,11 +37,16 @@ export async function pingDocker(): Promise<boolean> {
 // Environment to Docker image mapping
 // We use standard images to ensure broad compatibility without needing to build custom images
 const ENVIRONMENT_IMAGES: Record<string, string> = {
-    python: 'python:3.11-alpine',
-    node: 'node:20-alpine',
-    java: 'eclipse-temurin:21-jdk-alpine',
-    multi: 'node:20-alpine',
-    base: 'node:20-alpine',
+    python: 'codeblocking/python',
+    node: 'codeblocking/node',
+    java: 'codeblocking/java',
+    go: 'codeblocking/go',
+    rust: 'codeblocking/rust',
+    cpp: 'codeblocking/cpp',
+    php: 'codeblocking/php',
+    ruby: 'codeblocking/ruby',
+    multi: 'codeblocking/node',
+    base: 'codeblocking/base',
 };
 
 // Port range for container bindings (21000+ to avoid conflicts)
