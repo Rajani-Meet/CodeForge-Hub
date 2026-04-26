@@ -113,17 +113,73 @@ export default function CodeEditor() {
     const providerRef = useRef<WebsocketProvider | null>(null);
     const bindingRef = useRef<MonacoBinding | null>(null);
     const ydocRef = useRef<Y.Doc | null>(null);
+    const editorRef = useRef<any>(null);
+
+    // AI Assistant Code Insertion
+    useEffect(() => {
+        const handleInsertCode = (e: any) => {
+            const editor = editorRef.current;
+            if (editor) {
+                const text = e.detail.code;
+                const model = editor.getModel();
+                if (!model) return;
+
+                // Heuristic: If the code starts with imports or is significantly similar in structure to a full file,
+                // we treat it as a full file replacement.
+                const isFullFile = 
+                    (text.includes('import ') && (text.includes('export ') || text.includes('export default'))) ||
+                    (text.includes('package ') && text.includes('public class ')) || // Java
+                    (text.includes('package main') && text.includes('func main()')); // Go
+
+                if (isFullFile) {
+                    console.log("[IDE] Detected full file replacement from AI");
+                    const fullRange = model.getFullModelRange();
+                    editor.executeEdits("ai-assistant", [{ 
+                        range: fullRange, 
+                        text: text, 
+                        forceMoveMarkers: true 
+                    }]);
+                } else {
+                    console.log("[IDE] Inserting snippet at cursor");
+                    const selection = editor.getSelection();
+                    editor.executeEdits("ai-assistant", [{ 
+                        range: selection, 
+                        text: text, 
+                        forceMoveMarkers: true 
+                    }]);
+                }
+                editor.focus();
+            }
+        };
+        window.addEventListener('ide:insert-code', handleInsertCode);
+        return () => window.removeEventListener('ide:insert-code', handleInsertCode);
+    }, []);
 
     // Safe cleanup helper — suppress harmless Yjs warnings during destroy
     const cleanupCollab = () => {
+        const { setCollabProvider } = useIdeStore.getState();
+        setCollabProvider(null);
+
         const origLog = console.log;
-        console.log = (...args: any[]) => {
+        const origWarn = console.warn;
+        const origError = console.error;
+
+        const suppressor = (orig: any) => (...args: any[]) => {
             if (typeof args[0] === 'string' && args[0].includes('[yjs]')) return;
-            origLog.apply(console, args);
+            orig.apply(console, args);
         };
+
+        console.log = suppressor(origLog);
+        console.warn = suppressor(origWarn);
+        console.error = suppressor(origError);
+
         try { bindingRef.current?.destroy(); } catch {}
         try { providerRef.current?.destroy(); } catch {}
+
         console.log = origLog;
+        console.warn = origWarn;
+        console.error = origError;
+
         bindingRef.current = null;
         providerRef.current = null;
         ydocRef.current = null;
@@ -134,6 +190,7 @@ export default function CodeEditor() {
     }, [activeFile]);
 
     const handleEditorDidMount = async (editor: any) => {
+        editorRef.current = editor;
         if (!activeFile) return;
 
         const { projectId } = useIdeStore.getState();
@@ -248,6 +305,82 @@ export default function CodeEditor() {
             });
             monaco.editor.setTheme("codeforgehub-dark");
         }
+    }, [monaco]);
+
+    // Copilot-style Inline Autocomplete
+    useEffect(() => {
+        if (!monaco) return;
+
+        const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
+
+        const provider = monaco.languages.registerInlineCompletionsProvider({
+            pattern: '**',
+            provideInlineCompletions: async (model, position, context, token) => {
+                // Delay to avoid spamming while typing
+                await new Promise(resolve => setTimeout(resolve, 300));
+                if (token.isCancellationRequested) return { items: [] };
+
+                const lineContent = model.getLineContent(position.lineNumber);
+                if (lineContent.trim().length === 0) return { items: [] };
+
+                // Get prefix and suffix
+                const prefix = model.getValueInRange({
+                    startLineNumber: Math.max(1, position.lineNumber - 50),
+                    startColumn: 1,
+                    endLineNumber: position.lineNumber,
+                    endColumn: position.column
+                });
+
+                const suffix = model.getValueInRange({
+                    startLineNumber: position.lineNumber,
+                    startColumn: position.column,
+                    endLineNumber: Math.min(model.getLineCount(), position.lineNumber + 50),
+                    endColumn: model.getLineMaxColumn(Math.min(model.getLineCount(), position.lineNumber + 50))
+                });
+
+                // Get token from supabase for auth
+                let accessToken = '';
+                try {
+                    const { createClient } = await import('@/lib/supabase/client');
+                    const supabase = createClient();
+                    const { data: { session } } = await supabase.auth.getSession();
+                    accessToken = session?.access_token || '';
+                } catch {}
+
+                try {
+                    const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/ai/autocomplete`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accessToken}`
+                        },
+                        body: JSON.stringify({
+                            prefix,
+                            suffix,
+                            filename: model.uri.path
+                        }),
+                        signal: token.isCancellationRequested ? undefined : undefined // Monaco handles cancellation via token
+                    });
+
+                    const data = await response.json();
+                    if (data.success && data.suggestion) {
+                        return {
+                            items: [{
+                                insertText: data.suggestion,
+                                range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column)
+                            }]
+                        };
+                    }
+                } catch (err) {
+                    console.error('[Autocomplete] Fetch error:', err);
+                }
+
+                return { items: [] };
+            },
+            freeInlineCompletions: () => {}
+        });
+
+        return () => provider.dispose();
     }, [monaco]);
 
     const performSave = useCallback(async () => {
@@ -421,6 +554,8 @@ export default function CodeEditor() {
                         formatOnPaste: true,
                         bracketPairColorization: { enabled: true },
                         guides: { bracketPairs: true, indentation: true },
+                        inlineSuggest: { enabled: true, mode: 'always' },
+                        suggest: { preview: true }
                     }}
                 />
             </div>

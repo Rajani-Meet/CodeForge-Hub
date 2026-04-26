@@ -7,8 +7,9 @@ import githubRoutes from './routes/github.js'
 import projectsRoutes from './routes/projects.js'
 import filesRoutes from './routes/files.js'
 import collaboratorsRoutes from './routes/collaborators.js'
+import aiRoutes from './routes/ai.js'
 import { initializeTerminalService, getActiveSessionCount, cleanupTerminals } from './services/terminal.js'
-import { cleanupAllContainers } from './services/container.js'
+import { cleanupAllContainers, reconnectExistingContainers } from './services/container.js'
 
 const app = express()
 const httpServer = createServer(app)
@@ -94,6 +95,7 @@ app.use('/api/github', githubRoutes)
 app.use('/api/projects', projectsRoutes)
 app.use('/api/files', filesRoutes)
 app.use('/api/collaborators', collaboratorsRoutes)
+app.use('/api/ai', aiRoutes)
 
 // Error handling
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -113,8 +115,9 @@ process.on('SIGINT', shutdown)
 process.on('SIGTERM', shutdown)
 
 // Start server
-// Cleanup orphaned containers on startup
-cleanupAllContainers().catch(console.error);
+// On startup: reconnect to still-running containers instead of wiping them.
+// This prevents unnecessary container churn when the server restarts.
+reconnectExistingContainers().catch(console.error);
 
 httpServer.listen(PORT, () => {
     console.log(`🚀 Backend server running on http://localhost:${PORT}`)

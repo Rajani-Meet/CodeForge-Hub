@@ -34,6 +34,10 @@ interface IdeState {
     isSidebarOpen: boolean;
     toggleSidebar: () => void;
 
+    // AI Assistant State
+    isAiOpen: boolean;
+    toggleAi: () => void;
+
     // Backend connection status
     isBackendConnected: boolean;
     setBackendConnected: (connected: boolean) => void;
@@ -161,6 +165,9 @@ export const useIdeStore = create<IdeState>((set, get) => ({
 
     isSidebarOpen: true,
     toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
+
+    isAiOpen: false,
+    toggleAi: () => set((state) => ({ isAiOpen: !state.isAiOpen })),
 
     isBackendConnected: false,
     setBackendConnected: (connected) => set({ isBackendConnected: connected }),

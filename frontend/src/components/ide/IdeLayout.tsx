@@ -13,9 +13,20 @@ import CodeEditor from "@/components/ide/CodeEditor";
 import TerminalPanel from "@/components/ide/TerminalPanel";
 import AddCollaboratorModal from "@/components/ide/AddCollaboratorModal";
 import OnlineCollaborators from "@/components/ide/OnlineCollaborators";
+import AiAssistant from "@/components/ide/AiAssistant";
+import { Sparkles } from "lucide-react";
 
 export default function IdeLayout() {
-    const { isSidebarOpen, isTerminalOpen, toggleTerminal, saveToGithub, projectId, collabProvider } = useIdeStore();
+    const { 
+        isSidebarOpen, 
+        isTerminalOpen, 
+        toggleTerminal, 
+        saveToGithub, 
+        projectId, 
+        collabProvider,
+        isAiOpen,
+        toggleAi
+    } = useIdeStore();
     const router = useRouter();
 
     // Panel sizes as percentages
@@ -208,6 +219,22 @@ export default function IdeLayout() {
                     </motion.button>
 
                     <motion.button
+                        onClick={toggleAi}
+                        className={cn(
+                            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                            isAiOpen 
+                                ? "bg-primary text-white shadow-lg shadow-primary/20" 
+                                : "bg-white/5 text-slate-300 border border-white/5 hover:bg-white/10"
+                        )}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        title="AI Assistant"
+                    >
+                        <Sparkles className={cn("w-3.5 h-3.5", isAiOpen && "animate-pulse")} />
+                        <span className="hidden lg:inline">AI Assistant</span>
+                    </motion.button>
+
+                    <motion.button
                         onClick={handleSaveAndExit}
                         disabled={isSaving}
                         className={cn(
@@ -286,6 +313,18 @@ export default function IdeLayout() {
                         </>
                     )}
                 </div>
+
+                {/* AI Assistant Sidebar */}
+                {isAiOpen && (
+                    <motion.div 
+                        initial={{ x: 300, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: 300, opacity: 0 }}
+                        className="w-80 h-full flex-shrink-0"
+                    >
+                        <AiAssistant />
+                    </motion.div>
+                )}
             </div>
 
             {/* Status Bar */}

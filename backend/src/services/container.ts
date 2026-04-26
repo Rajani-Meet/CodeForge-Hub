@@ -9,17 +9,14 @@ function getDockerSocket(): string {
     const homeDir = os.homedir();
     const desktopSocket = path.join(homeDir, '.docker/desktop/docker.sock');
 
-    // Check if Docker Desktop socket exists
     if (fs.existsSync(desktopSocket)) {
         return desktopSocket;
     }
 
-    // Check for Windows named pipe
     if (os.platform() === 'win32') {
         return '//./pipe/docker_engine';
     }
 
-    // Fallback to standard Docker socket
     return '/var/run/docker.sock';
 }
 
@@ -35,41 +32,42 @@ export async function pingDocker(): Promise<boolean> {
 }
 
 // Environment to Docker image mapping
-// We use standard images to ensure broad compatibility without needing to build custom images
 const ENVIRONMENT_IMAGES: Record<string, string> = {
-    python: 'codeblocking/python',
-    node: 'codeblocking/node',
-    java: 'codeblocking/java',
-    go: 'codeblocking/go',
-    rust: 'codeblocking/rust',
-    cpp: 'codeblocking/cpp',
-    php: 'codeblocking/php',
-    ruby: 'codeblocking/ruby',
-    multi: 'codeblocking/node',
-    base: 'codeblocking/base',
+    python: 'codeblocking/python:latest',
+    node: 'codeblocking/node:latest',
+    java: 'codeblocking/java:latest',
+    go: 'codeblocking/go:latest',
+    rust: 'codeblocking/rust:latest',
+    cpp: 'codeblocking/cpp:latest',
+    php: 'codeblocking/php:latest',
+    ruby: 'codeblocking/ruby:latest',
+    multi: 'codeblocking/node:latest',
+    base: 'codeblocking/base:latest',
 };
 
 // Port range for container bindings (21000+ to avoid conflicts)
 const PORT_RANGE_START = 21000;
-const PORT_RANGE_SIZE = 10;
 
 interface ContainerInfo {
     containerId: string;
     environment: string;
     ports: Map<number, number>; // container port -> host port
-    projectPath: string;
+    projectPath: string;        // user workspace root mounted at /workspace
 }
 
-// Track active containers: userId-projectId -> ContainerInfo
+// Track active containers: "userId::language" -> ContainerInfo
+// Keyed by language so all projects of the same language share ONE container.
 const activeContainers: Map<string, ContainerInfo> = new Map();
+
 // Track containers currently being spawned to prevent cleanup race conditions
 const pendingContainerIds: Set<string> = new Set();
 
 // Track used host ports
 const usedPorts: Set<number> = new Set();
 
-function getContainerKey(userId: string, projectId: string): string {
-    return `${userId}-${projectId}`;
+// "userId::language" — using '::' to avoid collisions with UUIDs that contain '-'
+function getContainerKey(userId: string, language: string): string {
+    return `${userId}::${language}`;
 }
 
 // Check if a port is actually available on the system
@@ -105,8 +103,12 @@ function releasePort(port: number): void {
     usedPorts.delete(port);
 }
 
-export async function getContainer(userId: string, projectId: string): Promise<ContainerInfo | null> {
-    const key = getContainerKey(userId, projectId);
+/**
+ * Get the running container for a given user + language.
+ * Returns null if no container exists or if it has stopped.
+ */
+export async function getContainer(userId: string, language: string): Promise<ContainerInfo | null> {
+    const key = getContainerKey(userId, language);
     const info = activeContainers.get(key);
 
     if (!info) return null;
@@ -118,86 +120,85 @@ export async function getContainer(userId: string, projectId: string): Promise<C
         if (data.State.Running) {
             return info;
         }
-    } catch (error) {
-        // Container no longer exists
-        activeContainers.delete(key);
+    } catch {
+        // Container no longer exists in Docker
     }
 
+    activeContainers.delete(key);
     return null;
 }
 
-export async function forceStopContainer(userId: string, projectId: string): Promise<void> {
-    await stopContainer(userId, projectId);
+export async function forceStopContainer(userId: string, language: string): Promise<void> {
+    await stopContainer(userId, language);
 }
 
+/**
+ * Get or create a container for the given user + language.
+ *
+ * The ENTIRE user workspace directory is mounted at /workspace so that all
+ * of the user's projects are accessible as subdirectories inside the one
+ * container. Terminal sessions then set WorkingDir to /workspace/<projectId>.
+ *
+ * This means two Python projects share one container instead of two.
+ */
 export async function spawnContainer(
     userId: string,
-    projectId: string,
-    environment: string,
-    projectPath: string
+    language: string,
+    userWorkspacePath: string   // e.g. ~/.codeblocking/workspaces/<userId>
 ): Promise<ContainerInfo> {
-    const key = getContainerKey(userId, projectId);
-
-    // Check if container already exists
-    const existing = await getContainer(userId, projectId);
+    // Reuse existing container if it is still running
+    const existing = await getContainer(userId, language);
     if (existing) {
         return existing;
     }
 
-    const imageName = ENVIRONMENT_IMAGES[environment] || 'node:20-alpine';
+    const key = getContainerKey(userId, language);
+    const imageName = ENVIRONMENT_IMAGES[language] || 'codeblocking/base';
 
-    // Find available ports for common dev server ports
+    // Allocate host ports for container ports 3000-3005
     const portBindings: Record<string, { HostPort: string }[]> = {};
     const ports = new Map<number, number>();
 
-    // Bind ports 3000-3005 from container to available host ports
     for (let containerPort = 3000; containerPort <= 3005; containerPort++) {
         const hostPort = await findAvailablePort();
         portBindings[`${containerPort}/tcp`] = [{ HostPort: hostPort.toString() }];
         ports.set(containerPort, hostPort);
     }
 
-    // Ensure project directory exists and get absolute path
-    let absoluteProjectPath = path.resolve(projectPath);
+    // Resolve and normalise the workspace path
+    let absoluteWorkspacePath = path.resolve(userWorkspacePath);
 
-    // Fix for Windows Docker mounting: ensure forward slashes and proper drive casing
     if (os.platform() === 'win32') {
-        absoluteProjectPath = absoluteProjectPath.replace(/\\/g, '/');
-        // Ensure drive letter is lowercase (often required for WSL2/Docker backend)
-        if (absoluteProjectPath.match(/^[a-zA-Z]:\//)) {
-            absoluteProjectPath = absoluteProjectPath.charAt(0).toLowerCase() + absoluteProjectPath.slice(1);
+        absoluteWorkspacePath = absoluteWorkspacePath.replace(/\\/g, '/');
+        if (absoluteWorkspacePath.match(/^[a-zA-Z]:\//)) {
+            absoluteWorkspacePath = absoluteWorkspacePath.charAt(0).toLowerCase() + absoluteWorkspacePath.slice(1);
         }
     }
 
-    console.log(`Spawning container with image: ${imageName} for path: ${absoluteProjectPath}`);
+    console.log(`[Container] Spawning ${language} container for user ${userId}`);
+    console.log(`[Container] Mounting workspace: ${absoluteWorkspacePath}`);
 
-    // Ensure image exists or pull it
+    // Pull image if not available locally
     try {
-        const image = docker.getImage(imageName);
-        const imageInfo = await image.inspect().catch(() => null);
+        const imageInfo = await docker.getImage(imageName).inspect().catch(() => null);
         if (!imageInfo) {
-            console.log(`Image ${imageName} not found locally, pulling...`);
-            await new Promise((resolve, reject) => {
+            console.log(`[Container] Image ${imageName} not found locally, pulling...`);
+            await new Promise<void>((resolve, reject) => {
                 docker.pull(imageName, (err: any, stream: any) => {
                     if (err) return reject(err);
-                    docker.modem.followProgress(stream, onFinished, onProgress);
-                    function onFinished(err: any, output: any) {
+                    docker.modem.followProgress(stream, (err: any) => {
                         if (err) return reject(err);
-                        resolve(output);
-                    }
-                    function onProgress(event: any) {
-                        // console.log(event);
-                    }
+                        resolve();
+                    });
                 });
             });
-            console.log(`Image ${imageName} pulled successfully`);
+            console.log(`[Container] Image ${imageName} pulled successfully`);
         }
     } catch (pullError) {
-        console.error(`Error checking/pulling image ${imageName}:`, pullError);
+        console.error(`[Container] Error checking/pulling image ${imageName}:`, pullError);
     }
 
     try {
-        // Create container
         const container = await docker.createContainer({
             Image: imageName,
             Cmd: ['/bin/sh'],
@@ -206,50 +207,49 @@ export async function spawnContainer(
             WorkingDir: '/workspace',
             ExposedPorts: Object.keys(portBindings).reduce((acc, port) => ({ ...acc, [port]: {} }), {}),
             HostConfig: {
-                Binds: [`${absoluteProjectPath}:/workspace:rw`],
+                // Mount the entire user workspace so every project is a subdir at /workspace/<projectId>
+                Binds: [`${absoluteWorkspacePath}:/workspace:rw`],
                 PortBindings: portBindings,
                 NetworkMode: 'bridge',
-                // Resource limits
-                Memory: 512 * 1024 * 1024, // 512MB
-                CpuShares: 256, // 25% of CPU
+                Memory: 512 * 1024 * 1024, // 512 MB
+                CpuShares: 256,             // ~25% of a CPU core
             },
             Labels: {
                 'codeblocking.userId': userId,
-                'codeblocking.projectId': projectId,
+                'codeblocking.language': language,
+                'codeblocking.environment': language,
+                'codeblocking.userWorkspacePath': absoluteWorkspacePath,
             },
             Env: [
                 'TERM=xterm-256color',
-                'PS1=\\u@\\h:\\w\\$ ',  // Set a clear prompt showing current directory
+                'PS1=\\u@\\h:\\w\\$ ',
             ],
         });
 
-        // Mark as pending so cleanup doesn't delete it
         pendingContainerIds.add(container.id);
 
         try {
             await container.start();
 
-            // Wait a brief moment to ensure container is fully up
+            // Brief pause to let the container fully initialise
             await new Promise(resolve => setTimeout(resolve, 500));
 
             const info: ContainerInfo = {
                 containerId: container.id,
-                environment,
+                environment: language,
                 ports,
-                projectPath: absoluteProjectPath,
+                projectPath: absoluteWorkspacePath,
             };
 
             activeContainers.set(key, info);
-            console.log(`Container started for ${key}: ${container.id.substring(0, 12)}`);
-            console.log(`Port mappings:`, Array.from(ports.entries()).map(([c, h]) => `${c}->${h}`).join(', '));
+            console.log(`[Container] Started ${key}: ${container.id.substring(0, 12)}`);
+            console.log(`[Container] Ports:`, Array.from(ports.entries()).map(([c, h]) => `${c}->${h}`).join(', '));
 
             return info;
         } finally {
-            // Remove from pending whether success or fail
             pendingContainerIds.delete(container.id);
         }
     } catch (error) {
-        // Release ports if container creation failed
         ports.forEach((hostPort) => releasePort(hostPort));
         throw error;
     }
@@ -257,26 +257,24 @@ export async function spawnContainer(
 
 export async function execInContainer(
     userId: string,
-    projectId: string
+    language: string
 ): Promise<Docker.Exec | null> {
-    const info = await getContainer(userId, projectId);
+    const info = await getContainer(userId, language);
     if (!info) return null;
 
     const container = docker.getContainer(info.containerId);
 
-    const exec = await container.exec({
+    return container.exec({
         Cmd: ['/bin/bash'],
         AttachStdin: true,
         AttachStdout: true,
         AttachStderr: true,
         Tty: true,
     });
-
-    return exec;
 }
 
-export async function stopContainer(userId: string, projectId: string): Promise<void> {
-    const key = getContainerKey(userId, projectId);
+export async function stopContainer(userId: string, language: string): Promise<void> {
+    const key = getContainerKey(userId, language);
     const info = activeContainers.get(key);
 
     if (!info) return;
@@ -285,51 +283,111 @@ export async function stopContainer(userId: string, projectId: string): Promise<
         const container = docker.getContainer(info.containerId);
         await container.stop({ t: 5 });
         await container.remove();
-        console.log(`Container stopped for ${key}`);
+        console.log(`[Container] Stopped ${key}`);
     } catch (error) {
-        console.error(`Error stopping container ${key}:`, error);
+        console.error(`[Container] Error stopping ${key}:`, error);
     }
 
-    // Release ports
     info.ports.forEach((hostPort) => releasePort(hostPort));
     activeContainers.delete(key);
 }
 
+/**
+ * Called on server startup instead of cleanupAllContainers.
+ * Scans Docker for containers we previously managed and rebuilds the
+ * in-memory activeContainers map so existing containers are reused rather
+ * than destroyed and recreated.
+ */
+export async function reconnectExistingContainers(): Promise<void> {
+    console.log('[Container] Scanning for existing containers to reconnect...');
+
+    let containers: Docker.ContainerInfo[];
+    try {
+        containers = await docker.listContainers({
+            filters: { label: ['codeblocking.userId'] },
+        });
+    } catch (err) {
+        console.error('[Container] Docker not reachable during reconnect, skipping:', err);
+        return;
+    }
+
+    for (const containerData of containers) {
+        const userId = containerData.Labels['codeblocking.userId'];
+        // Support both the new 'language' label and the old 'environment' label
+        const language = containerData.Labels['codeblocking.language']
+            || containerData.Labels['codeblocking.environment']
+            || 'base';
+        // Support both the new 'userWorkspacePath' label and the old 'projectPath' label
+        const userWorkspacePath = containerData.Labels['codeblocking.userWorkspacePath']
+            || containerData.Labels['codeblocking.projectPath']
+            || '';
+
+        if (!userId || !language) continue;
+
+        // Rebuild port map from Docker's reported port bindings
+        const ports = new Map<number, number>();
+        for (const p of containerData.Ports) {
+            if (p.PublicPort && p.PrivatePort) {
+                ports.set(p.PrivatePort, p.PublicPort);
+                usedPorts.add(p.PublicPort);
+            }
+        }
+
+        const key = getContainerKey(userId, language);
+        activeContainers.set(key, {
+            containerId: containerData.Id,
+            environment: language,
+            ports,
+            projectPath: userWorkspacePath,
+        });
+
+        console.log(`[Container] Reconnected ${key}: ${containerData.Id.substring(0, 12)}`);
+    }
+
+    console.log(`[Container] Reconnected ${activeContainers.size} container(s).`);
+}
+
 export async function cleanupAllContainers(): Promise<void> {
-    console.log('Cleaning up all containers...');
+    console.log('[Container] Cleaning up all containers...');
 
     const keys = Array.from(activeContainers.keys());
     for (const key of keys) {
-        const [userId, projectId] = key.split('-');
-        await stopContainer(userId, projectId);
+        // Key format: "userId::language"
+        const separatorIndex = key.indexOf('::');
+        if (separatorIndex === -1) continue;
+        const userId = key.substring(0, separatorIndex);
+        const language = key.substring(separatorIndex + 2);
+        await stopContainer(userId, language);
     }
 
-    // Also clean up any orphaned codeblocking containers
-    const containers = await docker.listContainers({
-        filters: { label: ['codeblocking.userId'] },
-    });
+    // Also clean up any orphaned codeblocking containers not in our map
+    let orphans: Docker.ContainerInfo[] = [];
+    try {
+        orphans = await docker.listContainers({
+            filters: { label: ['codeblocking.userId'] },
+        });
+    } catch {
+        return;
+    }
 
     const activeIds = new Set(Array.from(activeContainers.values()).map(c => c.containerId));
 
-    for (const containerInfo of containers) {
-        // Skip if this container is currently active or pending
+    for (const containerInfo of orphans) {
         if (activeIds.has(containerInfo.Id) || pendingContainerIds.has(containerInfo.Id)) {
             continue;
         }
-
         try {
             const container = docker.getContainer(containerInfo.Id);
             await container.stop({ t: 1 });
             await container.remove();
-            console.log(`Cleaned up orphaned container: ${containerInfo.Id.substring(0, 12)}`);
+            console.log(`[Container] Cleaned up orphan: ${containerInfo.Id.substring(0, 12)}`);
         } catch (error) {
-            console.error(`Error cleaning up orphaned container:`, error);
+            console.error('[Container] Error cleaning up orphan:', error);
         }
     }
 }
 
-export function getContainerPorts(userId: string, projectId: string): Map<number, number> | null {
-    const key = getContainerKey(userId, projectId);
-    const info = activeContainers.get(key);
-    return info?.ports || null;
+export function getContainerPorts(userId: string, language: string): Map<number, number> | null {
+    const key = getContainerKey(userId, language);
+    return activeContainers.get(key)?.ports || null;
 }

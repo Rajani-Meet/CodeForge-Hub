@@ -179,35 +179,29 @@ router.get('/:id/open', async (req: AuthenticatedRequest, res) => {
         const isUserCloned = fs.existsSync(userPath)
 
         // Determine the actual project path to use
-        let projectPath: string
+        let projectPath = ownerPath
 
-        if (req.user!.id === project.user_id) {
-            // This is the owner
-            projectPath = ownerPath
-            if (!isOwnerCloned) {
+        if (!isOwnerCloned) {
+            if (req.user!.id === project.user_id) {
+                // Owner hasn't cloned yet, so clone it
                 const githubToken = req.user?.providerToken
                 if (!githubToken) {
                     return res.status(400).json({ error: 'GitHub token not available. Please log out and log back in with GitHub.' })
                 }
                 await cloneRepository(project.repo_url, githubToken, req.user!.id, id)
             } else {
-                // Pull latest changes silently
-                try {
-                    const { pullRepository } = await import('../services/git.js')
-                    await pullRepository(projectPath, req.user!.providerToken)
-                    console.log(`[GitService] Auto-pulled latest changes for project ${id}`)
-                } catch (pullError) {
-                    console.error(`[GitService] Auto-pull failed for project ${id}:`, pullError)
-                }
-            }
-        } else {
-            // This is a collaborator — use the owner's already-cloned repo
-            if (isOwnerCloned) {
-                projectPath = ownerPath
-                console.log(`[Collab] User ${req.user!.id} joining owner's workspace for project ${id}`)
-            } else {
                 // Owner hasn't cloned yet; collaborator can't clone for them
                 return res.status(400).json({ error: 'The project owner has not opened this project yet. Ask them to open it first.' })
+            }
+        } else {
+            // Project is already cloned, attempt to pull latest changes
+            try {
+                const githubToken = req.user?.providerToken
+                await pullRepository(projectPath, githubToken)
+                console.log(`[GitService] Auto-pulled latest changes for project ${id} (User: ${req.user!.id})`)
+            } catch (pullError) {
+                console.error(`[GitService] Auto-pull failed for project ${id}:`, pullError)
+                // Continue anyway so the user can at least see the local files
             }
         }
 
