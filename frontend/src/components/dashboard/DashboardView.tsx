@@ -456,22 +456,7 @@ export default function DashboardView({ user }: DashboardViewProps) {
                         <p className="text-slate-400">Manage and deploy your cloud environments.</p>
                     </div>
                     <div className="flex gap-4">
-                        <input
-                            type="file"
-                            ref={folderInputRef}
-                            className="hidden"
-                            {...({ webkitdirectory: "", directory: "" } as any)}
-                            onChange={handleFolderSelect}
-                        />
-                        <motion.button
-                            onClick={handleFolderUploadClick}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-lg transition-all text-sm font-medium"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                        >
-                            <Laptop className="w-5 h-5 opacity-70" />
-                            Import from PC
-                        </motion.button>
+
                         <motion.button
                             onClick={handleOpenImport}
                             className="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-lg transition-all text-sm font-medium"
