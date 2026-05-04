@@ -299,7 +299,7 @@ export default function CodeEditor() {
                     "editor.foreground": "#c9d1d9",
                     "editor.lineHighlightBackground": "#161b22",
                     "editor.selectionBackground": "#3B82F640",
-                    "editorCursor.foreground": userColor, // Use dynamic user color
+                    "editorCursor.foreground": "#c9d1d9", // Standard local cursor color
                     "editorWhitespace.foreground": "#21262d",
                     "editorIndentGuide.background": "#21262d",
                     "editorIndentGuide.activeBackground": "#3c3cf6",

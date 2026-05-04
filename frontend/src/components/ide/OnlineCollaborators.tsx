@@ -79,20 +79,18 @@ export default function OnlineCollaborators({ provider }: OnlineCollaboratorsPro
                         <img
                             src={localUser.avatar}
                             alt="You"
-                            className="w-7 h-7 rounded-full border-2 shadow-lg object-cover"
-                            style={{ borderColor: localUser?.color || '#238636' }}
+                            className="w-7 h-7 rounded-full border-2 border-[#161b22] shadow-lg object-cover"
                         />
                     ) : (
                         <div
                             className="w-7 h-7 rounded-full border-2 border-[#161b22] flex items-center justify-center text-[10px] font-bold text-white shadow-lg"
-                            style={{ backgroundColor: localUser?.color || '#238636' }}
+                            style={{ background: 'linear-gradient(135deg, #238636, #2ea043)' }}
                         >
                             You
                         </div>
                     )}
                     <div 
-                        className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#161b22]" 
-                        style={{ backgroundColor: localUser?.color || '#34d399' }}
+                        className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#161b22]" 
                     />
                 </div>
 
