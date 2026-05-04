@@ -104,7 +104,10 @@ export default function DashboardView({ user }: DashboardViewProps) {
         setLoadingRepos(true)
         try {
             const { accessToken, providerToken } = await getTokens()
-            if (!accessToken) return
+            if (!accessToken) {
+                alert('No access token found. Please log in again.')
+                return
+            }
 
             const res = await fetch(`${API_URL}/api/github/repos`, {
                 headers: {
@@ -116,9 +119,13 @@ export default function DashboardView({ user }: DashboardViewProps) {
             if (res.ok) {
                 const data = await res.json()
                 setRepos(data.repos || [])
+            } else {
+                const errorData = await res.json().catch(() => ({}))
+                alert(`Backend Error: ${res.status} - ${errorData.error || 'Unknown error. Check backend logs or CORS.'}`)
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error fetching repos:', error)
+            alert(`Network/CORS Error: ${error.message}. Is your backend running on ${API_URL}?`)
         } finally {
             setLoadingRepos(false)
         }
