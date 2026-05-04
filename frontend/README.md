@@ -44,6 +44,16 @@ Visit `http://localhost:4000` to interact with the application.
 
 To build and run the frontend in a production capacity without using the main project's `docker-compose`:
 
+### AWS Cloud Hosting
+
+We recommend deploying the Next.js frontend using **AWS Amplify Hosting** (which provides out-of-the-box support for Next.js SSR and static optimization) or containerizing it for **AWS ECS (Elastic Container Service)**.
+
+**AWS Amplify Deployment:**
+1. Connect your GitHub repository to AWS Amplify.
+2. Set the build settings to use the Next.js preset.
+3. Configure your Environment Variables in the Amplify Console.
+
+**Manual / EC2 / ECS Build:**
 ```bash
 # Set production variables
 export NODE_ENV=production

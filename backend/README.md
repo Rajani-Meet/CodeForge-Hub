@@ -45,7 +45,7 @@ The API will be available at `http://localhost:4001`.
 
 ## 🌍 Production Deployment
 
-Deploying the backend to production requires careful handling of the Docker socket since it actively spawns and destroys containers.
+Deploying the backend to production requires careful handling of the Docker socket since it actively spawns and destroys containers. We highly recommend using an **AWS EC2 Instance** (e.g., Ubuntu t3.medium or larger) with Docker installed.
 
 1. **Build the TypeScript application:**
    ```bash
@@ -58,8 +58,8 @@ Deploying the backend to production requires careful handling of the Docker sock
    npm run start
    ```
 
-### Notes on Containerization
-If you decide to deploy this backend inside a Docker container itself (Docker-in-Docker), you must mount the host's Docker socket to allow `dockerode` to communicate with the daemon:
+### Notes on Containerization (AWS EC2 / ECS)
+If you decide to deploy this backend inside a Docker container itself (Docker-in-Docker) on your EC2 instance, you must mount the host's Docker socket to allow `dockerode` to communicate with the daemon:
 
 ```bash
 docker run -d \

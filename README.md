@@ -100,7 +100,7 @@ npm run dev # Runs on port 3000
 
 ## 🌍 Production Deployment
 
-Deploying Code Forge Hub requires setting up the Dockerized components and properly exposing them to the internet behind an API Gateway/Reverse Proxy (e.g., NGINX).
+Deploying Code Forge Hub requires setting up the Dockerized components and properly exposing them to the internet behind an API Gateway/Reverse Proxy (e.g., NGINX). For cloud deployments, we recommend **AWS (Amazon Web Services)**.
 
 ### 1. Global Environment Variables
 
@@ -118,7 +118,14 @@ Before deploying, ensure you configure the `.env` variables across the services.
   - `OPENROUTER_API_KEY`: API Key for AI features
   - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`: GitHub integration credentials
 
-### 2. Frontend & Landing Page Setup
+### 2. Cloud Architecture (AWS Recommended)
+
+To host Code Forge Hub on AWS:
+- **Backend (EC2):** Because the backend relies heavily on `dockerode` to spawn containers, it must run on an **AWS EC2 Instance** (e.g., Ubuntu t3.medium or larger) with Docker installed.
+- **Frontend & Landing Page (AWS Amplify / Vercel / ECS):** The frontend and landing page can be deployed natively using AWS Amplify, or containerized and run on ECS.
+- **Reverse Proxy (ALB / NGINX):** Place an AWS Application Load Balancer (ALB) or NGINX reverse proxy in front to map domains.
+
+### 3. Frontend & Landing Page Setup
 
 The static Next.js assets are pre-configured to be deployed easily using Docker Compose.
 
@@ -128,9 +135,9 @@ docker-compose up -d --build
 ```
 This deploys the Frontend to port `4000` and the Landing Page to port `3000`.
 
-### 3. Backend Setup
+### 4. Backend Setup (AWS EC2)
 
-The backend handles creating and managing Docker containers, so it must have access to the host machine's Docker engine. It's recommended to run it directly on the primary application server or cluster where workspace containers will live.
+The backend handles creating and managing Docker containers, so it must have access to the host machine's Docker engine. It's recommended to run it directly on the primary application server (like your AWS EC2 instance) where workspace containers will live.
 
 ```bash
 cd backend
@@ -138,13 +145,13 @@ npm install
 npm run build
 npm run start
 ```
-*If you decide to containerize the backend itself, ensure you bind the Docker socket using `-v /var/run/docker.sock:/var/run/docker.sock` to give Dockerode permissions.*
+*If you decide to containerize the backend itself on EC2, ensure you bind the Docker socket using `-v /var/run/docker.sock:/var/run/docker.sock` to give Dockerode permissions.*
 
-### 4. Reverse Proxy Mapping
+### 5. Reverse Proxy Mapping
 
-Use an NGINX or Caddy reverse proxy to expose your services on port 80/443:
+Use an NGINX or Caddy reverse proxy (or AWS ALB) to expose your services on port 80/443:
 - Route `yourdomain.com` -> `localhost:3000` (Landing Page)
 - Route `app.yourdomain.com` -> `localhost:4000` (Frontend)
 - Route `api.yourdomain.com` -> `localhost:4001` (Backend)
 
-*Note: Ensure WebSocket support is enabled on the proxy for both the Next.js HMR (dev) and Socket.io / Yjs (production).*
+*Note: Ensure WebSocket support is enabled on the proxy/ALB for both the Next.js HMR (dev) and Socket.io / Yjs (production).*
