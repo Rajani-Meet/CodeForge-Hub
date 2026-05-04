@@ -1,6 +1,6 @@
 // API client for communicating with the backend
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://codeforge-api.duckdns.org';
 
 interface ApiResponse<T = unknown> {
     success: boolean;

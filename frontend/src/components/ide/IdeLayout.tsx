@@ -63,7 +63,7 @@ export default function IdeLayout() {
 
             if (projectId && authTokenRef.current) {
                 lastSaveRef.current = now;
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://codeforge-api.duckdns.org';
                 fetch(`${apiUrl}/api/projects/${projectId}/save`, {
                     method: 'POST',
                     headers: {

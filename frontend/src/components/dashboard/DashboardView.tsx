@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Terminal, Laptop, FolderUp, Check, AlertCircle, Loader2, X } from 'lucide-react'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://codeforge-api.duckdns.org'
 
 interface Project {
     id: string

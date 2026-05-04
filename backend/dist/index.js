@@ -12,14 +12,15 @@ const github_js_1 = __importDefault(require("./routes/github.js"));
 const projects_js_1 = __importDefault(require("./routes/projects.js"));
 const files_js_1 = __importDefault(require("./routes/files.js"));
 const collaborators_js_1 = __importDefault(require("./routes/collaborators.js"));
+const ai_js_1 = __importDefault(require("./routes/ai.js"));
 const terminal_js_1 = require("./services/terminal.js");
 const container_js_1 = require("./services/container.js");
 const app = (0, express_1.default)();
 const httpServer = (0, http_1.createServer)(app);
 const PORT = process.env.PORT || 4001;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:4000';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://code-forge-hub.vercel.app';
 // Allow local networks safely
-const allowedOrigins = [FRONTEND_URL, 'http://localhost:4000', 'http://127.0.0.1:4000', 'http://localhost:3000'];
+const allowedOrigins = [FRONTEND_URL, 'https://code-forge-hub.vercel.app', 'http://localhost:4000', 'http://127.0.0.1:4000', 'http://localhost:3000'];
 const ws_1 = require("ws");
 const path_1 = __importDefault(require("path"));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -91,6 +92,7 @@ app.use('/api/github', github_js_1.default);
 app.use('/api/projects', projects_js_1.default);
 app.use('/api/files', files_js_1.default);
 app.use('/api/collaborators', collaborators_js_1.default);
+app.use('/api/ai', ai_js_1.default);
 // Error handling
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
@@ -106,8 +108,9 @@ async function shutdown() {
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 // Start server
-// Cleanup orphaned containers on startup
-(0, container_js_1.cleanupAllContainers)().catch(console.error);
+// On startup: reconnect to still-running containers instead of wiping them.
+// This prevents unnecessary container churn when the server restarts.
+(0, container_js_1.reconnectExistingContainers)().catch(console.error);
 httpServer.listen(PORT, () => {
     console.log(`🚀 Backend server running on http://localhost:${PORT}`);
     console.log(`   Frontend URL: ${FRONTEND_URL}`);

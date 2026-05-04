@@ -56,7 +56,7 @@ export default function AiAssistant() {
             
             if (!session) throw new Error("No session found");
 
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://codeforge-api.duckdns.org';
             
             // Add context if file is active
             const contextMessages = [...newMessages];

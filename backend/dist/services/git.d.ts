@@ -1,3 +1,9 @@
+/**
+ * Returns the root workspace directory for a user.
+ * All of the user's projects live here as subdirectories.
+ * This is what gets mounted at /workspace inside their language container.
+ */
+export declare function getUserWorkspacePath(userId: string): string;
 export declare function getProjectPath(userId: string, projectId: string): string;
 export declare function getProjectPath(projectId: string): string;
 export declare function cloneRepository(repoUrl: string, githubToken: string, userId: string, projectId: string): Promise<string>;

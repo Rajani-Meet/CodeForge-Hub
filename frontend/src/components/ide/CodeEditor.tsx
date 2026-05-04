@@ -205,7 +205,7 @@ export default function CodeEditor() {
         const ydoc = new Y.Doc();
         ydocRef.current = ydoc;
 
-        const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
+        const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://codeforge-api.duckdns.org";
         const wsUrl = NEXT_PUBLIC_API_URL.replace(/^http/, 'ws') + '/socket/collaboration';
 
         // Room name MUST include projectId so both collaborators join the SAME room for the same file
@@ -311,7 +311,7 @@ export default function CodeEditor() {
     useEffect(() => {
         if (!monaco) return;
 
-        const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
+        const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://codeforge-api.duckdns.org";
 
         const provider = monaco.languages.registerInlineCompletionsProvider('*', {
             provideInlineCompletions: async (model, position, context, token) => {

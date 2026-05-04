@@ -27,7 +27,7 @@ export default function AddCollaboratorModal({ isOpen, onClose }: AddCollaborato
         setResult(null);
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://codeforge-api.duckdns.org";
             
             // Get auth token from supabase
             const { createClient } = await import("@/lib/supabase/client");
