@@ -10,7 +10,7 @@
   [![Supabase](https://img.shields.io/badge/Supabase-DB-green?style=for-the-badge&logo=supabase)](https://supabase.com/)
   [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
-  [Features](#-features) • [Architecture](#-architecture) • [Tech Stack](#-tech-stack) • [Quick Start](#-quick-start) • [API](#-api-reference)
+  [Features](#-features) • [Architecture](#-architecture) • [Project Structure](#-project-structure) • [Quick Start](#-quick-start) • [Production Deployment](#-production-deployment)
 </div>
 
 ---
@@ -19,40 +19,18 @@
 
 **Code Forge Hub** is a premium, cloud-powered IDE designed to bring the power of VSCode directly to your browser. Whether you're importing a local project or connecting to GitHub, Code Forge Hub provides a seamless, zero-latency development environment with integrated containerization, AI assistance, and real-time collaboration.
 
-## ✨ Features
+## 🏗️ Architecture & Project Structure
 
-### 🤖 AI Coding Assistant (New!)
-- **🧠 Context-Aware Chat** – Integrated AI assistant that understands your entire project structure.
-- **⚡ Smart Autocomplete** – Powered by **Gemini 2.0 Flash**, get real-time code suggestions as you type.
-- **📂 Project Intelligence** – The AI can "see" your file tree to help with cross-file logic and refactoring.
+The project is split into three main areas, each with its own specific focus and documentation:
 
-### 🚀 Zero-Latency Pipeline
-- **🔥 Container Pre-warming** – Containers start the moment you click a project, so they're ready before the IDE loads.
-- **🔄 Auto-Push on Exit** – Never lose work. Changes are automatically committed and pushed to GitHub when you disconnect.
-- **🧪 Multi-Environment Support** – Intelligent auto-detection for **Node.js, Python, Go, Rust, Java, C++, PHP, and Ruby**.
-- **💾 Persistent Workspaces** – Docker containers are automatically reconnected on server restart, preserving your runtime state.
-
-### 🤝 Professional Collaboration
-- **👥 Live Multi-cursor** – See exactly where your teammates are coding with beautifully styled, color-coded labels.
-- **⚡ Instant Sync** – Conflict-free editing powered by **Yjs CRDTs** for a seamless pairing experience.
-- **✉️ Automated Invites** – Invite teammates via email or GitHub username with professional HTML email templates.
-- **🟢 Online Presence** – Real-time visual indicators of everyone currently active in the workspace.
-
-### 💻 Premium IDE Experience
-- **📁 Pro File Explorer** – Tree-based management with recursive operations, multi-select, and unsaved changes tracking.
-- **📝 Monaco Engine** – The same high-performance editor that powers VSCode, with customized themes and shortcuts.
-- **🖥️ Real-time PTY Terminal** – Low-latency Linux terminal with full shell support and ANSI color handling.
-- **💾 Smart Autosave** – Intelligent, debounced saving logic keeps your focus on the code.
-
-### 🎨 Design & UX
-- **🌓 Glassmorphic UI** – A stunning, modern interface with deep transparency, blur effects, and neon accents.
-- **📐 Elastic Layout** – Draggable, resizable panels (Sidebar, Terminal, AI) for a custom workspace.
-- **✨ Micro-Animations** – Smooth transitions, pulse glows, and floating elements for a premium feel.
-- **📱 Fully Responsive** – Desktop-class IDE experience even on tablets and mobile devices.
-
----
-
-## 🏗️ Architecture
+1. **[Frontend (`/frontend`)](./frontend/README.md)**
+   - The React (Next.js) web application representing the IDE user interface.
+   - Monaco Editor, xterm.js terminal, real-time presence, AI chat interface.
+2. **[Backend (`/backend`)](./backend/README.md)**
+   - Node.js Express server orchestrating Docker workspaces.
+   - PTY terminal sessions, AI integration, GitHub operations, Yjs websocket synchronization.
+3. **Landing Page (`/landing-page`)**
+   - A standalone marketing site built in Next.js to provide optimized public-facing information without bogging down the IDE application.
 
 ```mermaid
 graph TD
@@ -67,20 +45,19 @@ graph TD
 ```
 
 ### 🛡️ Scalability & Isolation
-Code Forge Hub is built for scale and security:
-- **User Isolation**: Every user gets a dedicated Docker container with strict resource limits (512MB RAM, 0.25 CPU).
+- **User Isolation**: Every user gets a dedicated Docker container with strict resource limits.
 - **Resource Management**: Projects of the same language share a container per user to optimize memory overhead.
 - **Stateless Backend**: The Express.js backend can be horizontally scaled, while Supabase handles persistent state.
 - **Robust Git-Sync**: Automated stashing and branch management to handle concurrent edits and safe code recovery.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Tech Stack Overview
 
 | Type | Technology | Logo |
 | :--- | :--- | :---: |
-| **AI** | OpenRouter, Gemini 2.0 Flash | 🤖 |
-| **Frontend** | Next.js 15, Framer Motion, Zustand | ⚛️ |
+| **AI** | OpenRouter, Gemini Flash | 🤖 |
+| **Frontend** | Next.js 15, TailwindCSS, Framer Motion, Zustand | ⚛️ |
 | **Backend** | Node.js, Express, Socket.io | 🟢 |
 | **Terminal** | XTerm.js, Node-PTY | 🐚 |
 | **Isolation** | Docker, Dockerode | 🐳 |
@@ -89,7 +66,7 @@ Code Forge Hub is built for scale and security:
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Local Development)
 
 ### 📋 Prerequisites
 - **Node.js** 20.x or higher
@@ -97,62 +74,77 @@ Code Forge Hub is built for scale and security:
 - **Supabase** Project (URL & Anon Key)
 - **GitHub** OAuth Application
 - **OpenRouter** API Key (for AI features)
-- **SMTP Credentials** (for email invitations)
 
-### ⚙️ Installation
+### ⚙️ Local Execution
+
+For the best development experience, run each service in a separate terminal:
 
 ```bash
-# 1. Clone the project
-git clone https://github.com/user/code-forge-hub.git && cd CodeForge-Hub
+# Terminal 1: Backend
+cd backend
+npm install
+npm run dev # Runs on port 4001
 
-# 2. Setup Backend
-cd backend && npm install
-# Create .env based on .env.example
+# Terminal 2: Frontend
+cd frontend
+npm install
+npm run dev # Runs on port 4000
 
-# 3. Setup Frontend
-cd ../frontend && npm install
-# Create .env.local based on .env.example
-
-# 4. Setup Landing Page
-cd ../landing-page && npm install
+# Terminal 3: Landing Page
+cd landing-page
+npm install
+npm run dev # Runs on port 3000
 ```
 
-### ⚡ Execution
-
-For the best experience, run each service in a separate terminal window:
-
-| Service | Command | Port | Title |
-| :--- | :--- | :---: | :--- |
-| **Backend** | `npm run dev` | `4001` | Core API & Terminal Service |
-| **Frontend** | `npm run dev` | `4000` | The IDE Application |
-| **Marketing** | `npm run dev` | `3000` | High-Conversion Landing Page |
-
 ---
 
-## 📡 API Reference
+## 🌍 Production Deployment
 
-### 📁 Project Management
-- `GET /api/projects` – List all user workspace
-- `POST /api/projects` – Import from GitHub
-- `POST /api/projects/import` – **Multipart** local file upload
-- `POST /api/projects/:id/prewarm` – Trigger background container boot
+Deploying Code Forge Hub requires setting up the Dockerized components and properly exposing them to the internet behind an API Gateway/Reverse Proxy (e.g., NGINX).
 
-### 🤖 AI Capabilities
-- `POST /api/ai/chat` – Project-aware coding assistant
-- `POST /api/ai/autocomplete` – Real-time code suggestions
+### 1. Global Environment Variables
 
-### 🤝 Collaboration
-- `POST /api/collaborators/:projectId/invite` – Send email invitations
-- `GET /api/collaborators/:projectId` – List active collaborators
+Before deploying, ensure you configure the `.env` variables across the services.
 
----
+- **Frontend (`frontend/.env.local`):**
+  - `NEXT_PUBLIC_API_URL`: Your public API domain (e.g., `https://api.yourdomain.com`)
+  - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase connection keys
 
-## ⌨️ Keyboard Shortcuts
+- **Landing Page (`landing-page/.env.local`):**
+  - `NEXT_PUBLIC_APP_URL`: Your public Frontend domain (e.g., `https://app.yourdomain.com`)
 
-| Key | Description |
-| :--- | :--- |
-| `Ctrl + S` | Force Save / Sync |
-| `Alt + T` | Toggle Terminal Focus |
-| `Ctrl + I` | Open AI Assistant |
-| `Tab` | Accept AI Autocomplete |
+- **Backend (`backend/.env`):**
+  - `FRONTEND_URL`: Public domain of the IDE (`https://app.yourdomain.com`)
+  - `OPENROUTER_API_KEY`: API Key for AI features
+  - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`: GitHub integration credentials
 
+### 2. Frontend & Landing Page Setup
+
+The static Next.js assets are pre-configured to be deployed easily using Docker Compose.
+
+```bash
+# Build and deploy frontend and landing page detached
+docker-compose up -d --build
+```
+This deploys the Frontend to port `4000` and the Landing Page to port `3000`.
+
+### 3. Backend Setup
+
+The backend handles creating and managing Docker containers, so it must have access to the host machine's Docker engine. It's recommended to run it directly on the primary application server or cluster where workspace containers will live.
+
+```bash
+cd backend
+npm install
+npm run build
+npm run start
+```
+*If you decide to containerize the backend itself, ensure you bind the Docker socket using `-v /var/run/docker.sock:/var/run/docker.sock` to give Dockerode permissions.*
+
+### 4. Reverse Proxy Mapping
+
+Use an NGINX or Caddy reverse proxy to expose your services on port 80/443:
+- Route `yourdomain.com` -> `localhost:3000` (Landing Page)
+- Route `app.yourdomain.com` -> `localhost:4000` (Frontend)
+- Route `api.yourdomain.com` -> `localhost:4001` (Backend)
+
+*Note: Ensure WebSocket support is enabled on the proxy for both the Next.js HMR (dev) and Socket.io / Yjs (production).*
