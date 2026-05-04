@@ -71,7 +71,7 @@ export default function AddCollaboratorModal({ isOpen, onClose }: AddCollaborato
     };
 
     const getShareLink = () => {
-        const frontendUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000';
+        const frontendUrl = typeof window !== 'undefined' ? window.location.origin : 'https://code-forge-hub.vercel.app';
         return `${frontendUrl}/ide/${projectId}`;
     };
 
