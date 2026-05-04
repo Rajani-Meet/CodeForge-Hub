@@ -196,7 +196,6 @@ body {
 .yRemoteSelectionHead {
   position: absolute;
   border-left: 2px solid;
-  border-color: inherit;
   height: 100%;
 }
 
@@ -212,7 +211,6 @@ body {
   padding: 1px 6px;
   border-radius: 4px 4px 4px 0;
   color: #fff;
-  background-color: inherit;
   white-space: nowrap;
   pointer-events: none;
   z-index: 100;

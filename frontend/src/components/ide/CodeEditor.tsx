@@ -109,6 +109,12 @@ export default function CodeEditor() {
     const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [showSaved, setShowSaved] = useState(false);
+    
+    // Generate a consistent color for this session
+    const [userColor] = useState(() => {
+        const colors = ['#f87171', '#fb923c', '#fbbf24', '#a3e635', '#34d399', '#22d3ee', '#818cf8', '#c084fc', '#f472b6'];
+        return colors[Math.floor(Math.random() * colors.length)];
+    });
 
     const providerRef = useRef<WebsocketProvider | null>(null);
     const bindingRef = useRef<MonacoBinding | null>(null);
@@ -256,9 +262,6 @@ export default function CodeEditor() {
         bindingRef.current = binding;
 
         // Get real user info from Supabase for awareness
-        const colors = ['#f87171', '#fb923c', '#fbbf24', '#a3e635', '#34d399', '#22d3ee', '#818cf8', '#c084fc', '#f472b6'];
-        const userColor = colors[Math.floor(Math.random() * colors.length)];
-        
         try {
             const { createClient } = await import('@/lib/supabase/client');
             const supabase = createClient();
@@ -296,7 +299,7 @@ export default function CodeEditor() {
                     "editor.foreground": "#c9d1d9",
                     "editor.lineHighlightBackground": "#161b22",
                     "editor.selectionBackground": "#3B82F640",
-                    "editorCursor.foreground": "#ec4899", // Pink cursor
+                    "editorCursor.foreground": userColor, // Use dynamic user color
                     "editorWhitespace.foreground": "#21262d",
                     "editorIndentGuide.background": "#21262d",
                     "editorIndentGuide.activeBackground": "#3c3cf6",
@@ -305,7 +308,7 @@ export default function CodeEditor() {
             });
             monaco.editor.setTheme("codeforgehub-dark");
         }
-    }, [monaco]);
+    }, [monaco, userColor]);
 
     // Copilot-style Inline Autocomplete
     useEffect(() => {
