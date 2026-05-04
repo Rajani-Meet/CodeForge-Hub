@@ -182,6 +182,10 @@ export default function CodeEditor() {
         try { bindingRef.current?.destroy(); } catch {}
         try { providerRef.current?.destroy(); } catch {}
 
+        if (editorRef.current && (editorRef.current as any)._collabTagInterval) {
+            clearInterval((editorRef.current as any)._collabTagInterval);
+        }
+
         console.log = origLog;
         console.warn = origWarn;
         console.error = origError;
@@ -278,11 +282,38 @@ export default function CodeEditor() {
                 color: userColor,
             });
         }
+
+        // Periodically add data-username to remote cursors so they show up like Google Docs
+        const tagInterval = setInterval(() => {
+            const states = provider.awareness.getStates();
+            const headElements = document.querySelectorAll('.yRemoteSelectionHead');
+            
+            headElements.forEach(el => {
+                const className = Array.from(el.classList).find(c => c.startsWith('yRemoteSelectionHead-'));
+                if (className) {
+                    const clientId = parseInt(className.split('-')[1]);
+                    const state: any = states.get(clientId);
+                    if (state?.user?.name && !el.getAttribute('data-username')) {
+                        el.setAttribute('data-username', state.user.name);
+                        // Ensure background color is set for the name tag
+                        const styleEl = document.createElement('style');
+                        styleEl.innerHTML = `.${className}::after { background-color: ${state.user.color} !important; }`;
+                        if (!document.head.innerHTML.includes(`.${className}::after`)) {
+                            document.head.appendChild(styleEl);
+                        }
+                    }
+                }
+            });
+        }, 1000);
+
+        // Store interval to clear it on cleanup
+        (editor as any)._collabTagInterval = tagInterval;
     };
 
     useEffect(() => {
         if (monaco) {
-            monaco.editor.defineTheme("codeforgehub-dark", {
+            const themeName = `codeforgehub-dark-${userColor.replace('#', '')}`;
+            monaco.editor.defineTheme(themeName, {
                 base: "vs-dark",
                 inherit: true,
                 rules: [
@@ -299,14 +330,14 @@ export default function CodeEditor() {
                     "editor.foreground": "#c9d1d9",
                     "editor.lineHighlightBackground": "#161b22",
                     "editor.selectionBackground": "#3B82F640",
-                    "editorCursor.foreground": "#c9d1d9", // Standard local cursor color
+                    "editorCursor.foreground": userColor, // Use dynamic user color
                     "editorWhitespace.foreground": "#21262d",
                     "editorIndentGuide.background": "#21262d",
                     "editorIndentGuide.activeBackground": "#3c3cf6",
                     "editor.lineNumberForeground": "#484f58",
                 },
             });
-            monaco.editor.setTheme("codeforgehub-dark");
+            monaco.editor.setTheme(themeName);
         }
     }, [monaco, userColor]);
 
