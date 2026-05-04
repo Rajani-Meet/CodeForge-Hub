@@ -81,7 +81,7 @@ export async function pullRepository(projectPath: string, githubToken?: string):
         // If we are on 'autosave', check if we should switch back to the default branch
         if (currentBranch === 'autosave' && !hasLocalChanges) {
             try {
-                const remoteInfo = await git.remote(['show', 'origin'])
+                const remoteInfo = (await git.remote(['show', 'origin'])) || ''
                 const match = remoteInfo.match(/HEAD branch: (.*)/)
                 const defaultBranch = match ? match[1].trim() : 'main'
 
