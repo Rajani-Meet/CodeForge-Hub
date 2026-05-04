@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:4000';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://code-forge-hub.vercel.app';
 
 export default function Hero() {
     const cursorRef = useRef(null);

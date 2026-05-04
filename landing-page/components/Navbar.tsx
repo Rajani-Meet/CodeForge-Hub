@@ -5,7 +5,7 @@ import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:4000';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://code-forge-hub.vercel.app';
 
 export default function Navbar() {
     const navRef = useRef(null);

@@ -14,10 +14,10 @@ import { cleanupAllContainers, reconnectExistingContainers } from './services/co
 const app = express()
 const httpServer = createServer(app)
 const PORT = process.env.PORT || 4001
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:4000'
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://code-forge-hub.vercel.app'
 
 // Allow local networks safely
-const allowedOrigins = [FRONTEND_URL, 'http://localhost:4000', 'http://127.0.0.1:4000', 'http://localhost:3000'];
+const allowedOrigins = [FRONTEND_URL, 'https://code-forge-hub.vercel.app', 'http://localhost:4000', 'http://127.0.0.1:4000', 'http://localhost:3000'];
 
 import { WebSocketServer } from 'ws'
 import path from 'path'

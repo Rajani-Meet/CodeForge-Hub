@@ -16,7 +16,7 @@ RUN npm ci --legacy-peer-deps
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-ARG NEXT_PUBLIC_APP_URL=http://localhost:4000
+ARG NEXT_PUBLIC_APP_URL=https://code-forge-hub.vercel.app
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 

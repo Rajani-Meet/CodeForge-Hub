@@ -77,7 +77,7 @@ router.post('/:projectId/invite', async (req: AuthenticatedRequest, res) => {
         }
 
         // Build the IDE collaboration link
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4000'
+        const frontendUrl = process.env.FRONTEND_URL || 'https://code-forge-hub.vercel.app'
         const ideLink = `${frontendUrl}/ide/${projectId}`
 
         // Look up user by email in Supabase auth if possible
