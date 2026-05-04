@@ -8,6 +8,7 @@ import projectsRoutes from './routes/projects.js'
 import filesRoutes from './routes/files.js'
 import collaboratorsRoutes from './routes/collaborators.js'
 import aiRoutes from './routes/ai.js'
+import proxyRoutes from './routes/proxy.js'
 import { initializeTerminalService, getActiveSessionCount, cleanupTerminals } from './services/terminal.js'
 import { cleanupAllContainers, reconnectExistingContainers } from './services/container.js'
 
@@ -96,6 +97,7 @@ app.use('/api/projects', projectsRoutes)
 app.use('/api/files', filesRoutes)
 app.use('/api/collaborators', collaboratorsRoutes)
 app.use('/api/ai', aiRoutes)
+app.use('/api/proxy', proxyRoutes)
 
 // Error handling
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
