@@ -77,8 +77,8 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
         }
 
         // Validate environment
-        const validEnvironments = ['python', 'node', 'java', 'go', 'rust', 'cpp', 'php', 'ruby', 'base']
-        const selectedEnvironment = validEnvironments.includes(environment) ? environment : 'base'
+        const validEnvironments = ['python', 'node', 'java', 'go', 'rust', 'cpp', 'php', 'ruby']
+        const selectedEnvironment = validEnvironments.includes(environment) ? environment : 'node'
 
         const githubToken = req.user?.providerToken
         if (!githubToken) {
@@ -287,7 +287,7 @@ router.post('/import', upload.array('files'), async (req: any, res: Response) =>
                 repo_url: repo.html_url,
                 repo_full_name: repo.full_name,
                 is_private: repo.private,
-                environment: environment || 'base'
+                environment: environment || 'node'
             })
             .select()
             .single()

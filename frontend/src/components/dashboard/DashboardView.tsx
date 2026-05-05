@@ -771,8 +771,7 @@ export default function DashboardView({ user }: DashboardViewProps) {
                                             { id: 'rust', label: 'Rust', icon: '🦀' },
                                             { id: 'cpp', label: 'C++', icon: 'C' },
                                             { id: 'php', label: 'PHP', icon: '🐘' },
-                                            { id: 'ruby', label: 'Ruby', icon: '💎' },
-                                            { id: 'base', label: 'Base', icon: '📦' }
+                                            { id: 'ruby', label: 'Ruby', icon: '💎' }
                                         ].map(env => (
                                             <button
                                                 key={env.id}
@@ -873,8 +872,7 @@ export default function DashboardView({ user }: DashboardViewProps) {
                                         {[
                                             { id: 'node', name: 'Node.js', icon: '⬢' },
                                             { id: 'python', name: 'Python', icon: '🐍' },
-                                            { id: 'java', name: 'Java', icon: '☕' },
-                                            { id: 'base', name: 'Other', icon: '📦' }
+                                            { id: 'java', name: 'Java', icon: '☕' }
                                         ].map((env) => (
                                             <div
                                                 key={env.id}
